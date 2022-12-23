@@ -1,0 +1,1002 @@
+\documentclass[article, onecolumn]{IEEEtran}
+
+\usepackage{cite}
+\ifCLASSINFOpdf
+	\usepackage[pdftex]{graphicx}
+	\graphicspath{{../figures/}{../../benchmarks/volkov_diss/}}
+	\DeclareGraphicsExtensions{.pdf,.jpeg,.png, .jpg, .PNG}
+\else
+\fi
+\usepackage{amsmath,bm}
+\interdisplaylinepenalty=2500
+\ifCLASSOPTIONcompsoc
+	\usepackage[caption=false,font=normalsize,labelfont=sf,textfont=sf]{subfig}
+\else
+	\usepackage[caption=false,font=footnotesize]{subfig}
+\fi
+\usepackage{url}
+\usepackage{amsfonts} % for \mathbb{}
+\usepackage{listings} % For writing math in verbatim
+\usepackage{enumerate}
+
+\usepackage[showlabels,sections,floats,textmath,displaymath]{preview}
+\usepackage{amssymb} %% For showing special symbols like \bigstar
+\usepackage{pifont}  %% For showing circled numbers
+\usepackage{array}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{ifthen}
+\usepackage{dirtree}
+\setlength{\DTbaselineskip}{13pt}
+\renewcommand*\DTstyle{}
+\DTsetlength{.2em}{1em}{.2em}{.4pt}{2pt}
+
+\newcommand{\mathnew}{\mathit} 
+% for nice reference 
+\newcommand{\fsp}{{\;}}
+\newcommand{\Fig}{\figurename \fsp}
+\newcommand{\Sec}{Sec.\fsp}
+\newcommand{\Eq}{Eq.\fsp}
+\newcommand{\Tab}{Tab.\fsp}
+\newcommand{\Alg}{Alg.\fsp}
+\newcommand{\etal}{\textit{et al}. }
+\newcommand{\ie}{\textit{i}.\textit{e}. }
+\newcommand{\eg}{\textit{e}.\textit{g}. }
+\newcommand{\Prop}{Property }
+
+\DeclareMathOperator*{\argminB}{argmin} 
+
+\hyphenation{temperature} % correct bad hyphenation here
+
+\usepackage{tikz}
+\usetikzlibrary{arrows}
+\usetikzlibrary{intersections}
+\usetikzlibrary{calc, quotes}
+\usetikzlibrary{external}
+\tikzexternalize[prefix=tikz_figures/]%
+\pgfdeclarelayer{bg}    % declare background layer
+\pgfsetlayers{bg,main} % set the order of the layers (main is the standard layer)
+\usetikzlibrary{patterns}
+\usetikzlibrary{decorations.pathreplacing,calligraphy}
+
+\renewcommand\thesection{\arabic{section}}
+\renewcommand\thesubsectiondis{\textbf{\thesection.\arabic{subsection}}} %% This is to change the looking of subsection heading number
+\renewcommand\thesubsection{\thesection.\arabic{subsection}} %% This is to change the numbering by \ref{}
+\renewcommand\thesubsubsectiondis{\ding{42}\;\thesection.\arabic{subsection}.\arabic{subsubsection}}
+
+\setcounter{tocdepth}{1} % Show sections
+%\setcounter{tocdepth}{2} % + subsections
+%\setcounter{tocdepth}{3} % + subsubsections
+%\setcounter{tocdepth}{4} % + paragraphs
+%\setcounter{tocdepth}{5} % + subparagraphs
+
+%% The following commands are used to reduce the space before and after formula
+%% in align and equation environments
+%\setlength{\abovedisplayskip}{1pt}
+%\setlength{\belowdisplayskip}{0pt}
+%\setlength{\abovedisplayshortskip}{0pt}
+%\setlength{\belowdisplayshortskip}{0pt}
+
+%%
+%% The following definition is a remedy of the fact that
+%% IEEEtrans class does not define subparagraph.
+%% Check this post for details
+%% https://tex.stackexchange.com/a/8362/172530
+\newcommand{\subparagraph}{}
+\usepackage{titlesec} % for controlling vertical space around section headers
+\titlespacing\section{0pt}{8pt plus 2pt minus 2pt}{4pt plus 2pt minus 2pt}
+\titlespacing\subsection{0pt}{6pt plus 2pt minus 2pt}{2pt plus 2pt minus 2pt}
+\titlespacing\subsubsection{0pt}{4pt plus 2pt minus 2pt}{2pt plus 1pt minus 1pt}
+
+\titleformat{\subsection}
+{\normalfont\bfseries}
+{\thesubsection}{1em}{}
+
+%%
+%% Check this post for how to write properly-sized ceiling operator
+%% https://tex.stackexchange.com/a/367035/172530
+%%
+\usepackage{mathtools}
+\DeclarePairedDelimiter{\ceil}{\lceil}{\rceil}
+\DeclarePairedDelimiter{\floor}{\lfloor}{\rfloor}
+
+%% For text color
+\usepackage{xcolor}
+
+%% For drawing boxes around text
+%% https://tex.stackexchange.com/a/234195/172530
+\newcommand\textbox[2]{%
+  \tikz[baseline]\node[%
+  inner ysep=0pt, 
+  inner xsep=2pt, 
+  anchor=text, 
+  rectangle, 
+  rounded corners=1mm,
+  #1] {\strut#2};%
+}
+
+%% package for highlighting text
+%% Usage: \hl{text to be highlighted}
+\usepackage{soul}
+\sethlcolor{yellow}
+
+%% underlining for emphasis
+%% Examples:
+%% \uline{important} underline
+%% \uuline{urgent} double-underline
+%% \uwave{boat} wavy underline like
+%% \sout{wrong} line struck through word
+%% \xout{removed} removed
+%% \dashuline{dashing} dashed
+%% \dotuline{dotty} dotted
+\usepackage[normalem]{ulem}
+
+%% define a red check mark
+\newcommand\redcheck{
+  {\textcolor{red}{\ding{52}}}
+}
+
+\usepackage{dblfloatfix}    % To enable figures at the bottom of page
+
+\usepackage{wrapfig}
+\usepackage{siunitx}
+
+% Overlay question mark on equal mark
+\def\qeq{\mathrel{%
+    \mathchoice{\QEQ}{\QEQ}{\scriptsize\QEQ}{\tiny\QEQ}%
+}}
+\def\QEQ{{%
+    \setbox0\hbox{=}%
+    \rlap{\hbox to \wd0{\hss?\hss}}\box0
+  }}
+
+%% Package for theorem-like blocks
+\usepackage{amsthm}
+\renewcommand\qedsymbol{$\blacksquare$}
+\newtheorem{prop}{Property}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Tikz figure commands
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\defs}[1]{
+  %% #1: gap
+  \def\latalu{6}
+  \def\latmem{24}
+  \def\unit{.1}
+  \def\h{.2}
+  \def\scale{.7}
+  \def\alpha{6}
+  \def\numwarps{6}
+  \def\gap{#1}
+  \pgfmathsetmacro\latwarp{\alpha*\latalu*\unit+\latmem*\unit+\alpha*\gap*\unit-\gap*\unit}
+  \pgfmathsetmacro\span{\alpha*\latalu+\latmem+\alpha*\gap-\gap+\numwarps-1}
+}
+
+\newcommand{\cycles}[2]{
+  %% #1: height of the line
+  %% #2: number of cycles
+  \foreach \i in {0,...,#2}
+  {
+    \draw [ultra thin, red] ($(TL)+(\i*.1, 0)$) -- ++(0, -#1);
+  }
+}
+
+\newcommand{\mylabel}[4]{
+  %% #1 width of the label
+  %% #2 text for the label
+  %% #3 scale
+  %% #4 below of above
+  %% The left is defined as the coordinate before calling this command
+  \coordinate (right) at ($(left)+(#1, 0)$);
+  \node [scale=#3, #4, inner xsep=0] (label) at ($(left)!.5!(right)$) {#2};
+  \draw [ultra thin] (left) |- (label.west); 
+  \draw [ultra thin] (right) |- (label.east); 
+}
+
+\newcommand{\latlabel}[1]{
+  %% #1: scale of the text
+  %% (left) should be defined as the topleft of the warp
+  \mylabel{\latalu*\unit}{$\text{lat}_\text{alu}$}{\scale}{above};
+  \coordinate (left) at ($(left)+(\alpha*\latalu*\unit+\alpha*\gap*\unit-\gap*\unit, 0)$);
+  \mylabel{\latmem*\unit}{$\text{lat}_\text{mem}$}{\scale}{above};
+}
+
+\newcommand{\coord}[3]{
+  %% origin is defined as a coordinate
+  %% #1: x length
+  %% #2: y length
+  %% #3: scale
+  \draw [fill=black] (origin) circle (2pt);
+  \draw [thick, ->, >=stealth, name path=x] (origin) -- ++(#1, 0)
+  node [scale=#3, right] {$n$};
+  \draw [thick, ->, >=stealth, name path=y] (origin) -- ++(0, #2)
+  node [scale=#3, above] {$\text{thr}_\text{warp}$};  
+}
+\newcommand{\maxthralu}[4]{
+  %% #1: \alpha, i.e. number of alu insts per warp
+  %% #2: number of warps 
+  %% #3: starting index of the first warp in this group
+  %% #4: gap between consecutive alu insts
+  %% (TL) should already be defined
+  \pgfmathsetmacro\alp{int(#1-1)}
+  \pgfmathsetmacro\warps{int(#2-1)}
+  \foreach \w in {0,...,\warps} {
+    \pgfmathsetmacro\z{int(#3+\w)}
+    \node [left, scale=.9*\scale] at ($(TL)+(\w*\unit,-\w*\h-.5*\h)$) {w\z};
+    \foreach \i in {0,...,\alp} {
+      \draw [thick] ($(TL)+(\i*#4*\unit+\i*\latalu*\unit+\w*\unit, -\w*\h)$)
+      rectangle ++(\latalu*\unit, -\h);
+    }
+  }
+}
+
+\newcommand{\maxthrmem}[1]{
+  %% #1: number of warps 
+  %% (memTL) should already be defined
+  \pgfmathsetmacro\warps{int(#1-1)}
+  \foreach \w in {0,...,\warps} {
+    \draw [thick, blue] ($(memTL)+(\w*\unit, -\w*\h)$)
+    rectangle ++(\latmem*\unit, -\h);
+  }
+}
+
+\newcommand{\drawwarp}[4]{
+  %% parameters same as \maxthralu
+  %% #1: \alpha, i.e. number of alu insts per warp
+  %% #2: number of warps 
+  %% #3: starting index of the first warp in this group
+  %% #4: gap between consecutive alu insts
+  %% (TL) should already be defined
+  \maxthralu{#1}{#2}{#3}{#4};
+  \coordinate (memTL) at ($(TL)+(#1*\latalu*\unit+#1*#4*\unit-#4*\unit, 0)$);
+  \maxthrmem{#2};
+}
+
+\newcommand{\myPerfModel}[1]{
+  %% #1 scale
+  
+  % \draw [help lines] (-4,3) grid (4, -3);
+  % \draw (0,0) circle (2pt);
+
+  \def\scale{#1}
+
+  %% Draw latency mode
+  \coordinate (origin) at (-3,0);
+  \coord{5}{3}{\scale};
+  \coordinate (P) at ($(origin)+(1.5,1.5)$);
+  \draw [ultra thick] (origin)
+  --node [midway, above, sloped, align=center, scale=.8*\scale] {latency mode} (P);
+  \draw [ultra thin, densely dashed] (P) -- (P |- origin)
+  node [below, scale=\scale] {$n_\text{lat}$};
+  \draw [ultra thin, densely dashed] (P) -- (P -| origin)
+  node [left, scale=\scale] {$\text{thr}_\text{lat}$};
+  %% Draw gradual saturate effect
+  \coordinate (Q) at ($(P)+(1,.5)$);
+  \draw [ultra thick] (P) to[out=40, in=185]
+  node [scale=.7*\scale, midway, align=center, below, yshift=-1ex, xshift=1.5ex]
+  {gradual\\saturate\\effect} (Q);
+  \draw [ultra thin, densely dashed] (Q) -- (Q |- origin)
+  node [below, scale=\scale] {$n_\text{thr}$};
+  \draw [ultra thin, densely dashed] (Q) -- (Q -| origin)
+  node [left, scale=\scale] {$\text{maxThr}_\text{warp}$};
+  %% Draw throughput mode
+  \draw [ultra thick] (Q) --node [midway, above, sloped, align=center, scale=.8*\scale]
+  {Throughput mode} ++(2, 0);
+}
+
+\newcommand{\volkovPerfModel}[1]{
+  %% #1 scale
+  
+  % \draw [help lines] (-4,3) grid (4, -3);
+  % \draw (0,0) circle (2pt);
+
+  \def\scale{#1}
+
+  %% Draw latency mode
+  \coordinate (origin) at (-3,0);
+  \coord{5}{3}{\scale};
+  \coordinate (P) at ($(origin)+(2,2)$);
+  \draw [ultra thick] (origin)
+  --node [midway, above, sloped, align=center, scale=.9*\scale] {latency mode} (P);
+  \draw [ultra thin, densely dashed] (P) -- (P |- origin)
+  node [below, scale=\scale] {$n_\text{tran}$};
+  \draw [ultra thin, densely dashed] (P) -- (P -| origin)
+  node [left, scale=\scale] {$\text{maxThr}_\text{warp}$};
+  %% Draw gradual saturate effect
+  % \coordinate (Q) at ($(P)+(1,.5)$);
+  % \draw [ultra thick] (P) to[out=40, in=185]
+  % node [scale=.7*\scale, midway, align=center, below, yshift=-1ex, xshift=1.5ex]
+  % {gradual\\saturate\\effect} (Q);
+  % \draw [ultra thin, densely dashed] (Q) -- (Q |- origin)
+  % node [below, scale=\scale] {$n_\text{thr}$};
+  % \draw [ultra thin, densely dashed] (Q) -- (Q -| origin)
+  % node [left, scale=\scale] {$\text{maxThr}_\text{warp}$};
+  %% Draw throughput mode
+  \draw [ultra thick] (P) --node [midway, above, sloped, align=center, scale=.9*\scale]
+  {Throughput mode} ++(2.5, 0);
+}
+
+\newcommand{\demoLittle}{
+  \draw [help lines] (-4,3) grid (4, -3);
+  \draw (0,0) circle (2pt);
+
+  \defs{0}
+  \pgfmathsetmacro\span{\alpha*\latalu+\latmem+\alpha*\gap-\gap}
+  \pgfmathsetmacro\cycleh{\numwarps*\h}
+
+  \coordinate (TL) at (-4, 3);
+  \coordinate (origin) at (TL);
+
+  \cycles{\cycleh}{\span}
+  \coordinate (warp0TL) at (TL);
+  \drawwarp{\alpha}{1}{0}{\gap};
+
+  %% Draw label
+  \coordinate (left) at (TL);
+  \latlabel{\scale}
+  
+  %% 1-5 warps
+  \foreach \row in {1,...,5}
+  {
+    %% Every line draws two warps
+    %% right: (TL) = ($(TL)+(5*\unit, -\h*\row)$)
+    %% left: (TL) = ($(TL)$+(-\latwarp, 0))
+    %% Right warp
+    \pgfmathsetmacro\lidx{int(2*\row-1)}
+    \pgfmathsetmacro\ridx{int(2*\row)}
+    \coordinate (TL) at ($(TL)+(5*\unit,-\h)$);
+    \coordinate (oldTL) at (TL);
+    \drawwarp{\alpha}{1}{\ridx}{\gap};
+    %% Left warp
+    \coordinate (TL) at ($(TL)+(-\latwarp, 0)$);
+    \drawwarp{\alpha}{1}{\lidx}{\gap};
+    \coordinate (TL) at (oldTL);
+  }
+
+  %% Draw period Dealt T
+  \coordinate (left) at ($(origin)+(0,-\numwarps*\h)$);
+  \mylabel{\latwarp}{$\Delta T$}{\scale}{below};
+  \coordinate (left) at ($(origin)+(3*\latalu*\unit+5*\unit,0)$);
+  \mylabel{2*\latalu*\unit}{$\Delta T'$}{\scale}{above};
+}
+
+\newcommand{\labelCycle}[1]{
+  %% #1: cycle number
+  %% (TL) should be defined
+  %% \numwarps should be defined
+  \coordinate (p) at ($(TL)+(#1*\unit, -\numwarps*\h)$);
+  \node [scale=\scale, below left, inner sep=0] (pNode) at ($(p)+(-.2,-.2)$) {cycle #1};
+  \draw [->, >=stealth] (pNode.north east) -- (p)
+}
+
+\newcommand{\labelCycleRight}[1]{
+  %% #1: cycle number
+  %% (TL) should be defined
+  %% \numwarps should be defined
+  \coordinate (p) at ($(TL)+(#1*\unit, -\numwarps*\h)$);
+  \node [scale=\scale, below right, inner sep=0] (pNode) at ($(p)+(.2,-.2)$) {cycle #1};
+  \draw [->, >=stealth] (pNode.north west) -- (p)
+}
+
+\newcommand{\labelCycleAbove}[1]{
+  %% #1: cycle number
+  %% (TL) should be defined
+  %% \numwarps should be defined
+  \coordinate (p) at ($(TL)+(#1*\unit, 0)$);
+  \node [scale=\scale, above left, inner sep=0, align=center] (pNode) at ($(p)+(-.2,.2)$) {cycle #1};
+  \draw [->, >=stealth] (pNode.south east) -- (p)
+}
+
+\newcommand{\labelCycleAboveRight}[1]{
+  %% #1: cycle number
+  %% (TL) should be defined
+  %% \numwarps should be defined
+  \coordinate (p) at ($(TL)+(#1*\unit, 0)$);
+  \node [scale=\scale, above right, inner sep=0, align=center] (pNode) at ($(p)+(.2,.2)$) {cycle #1};
+  \draw [->, >=stealth] (pNode.south west) -- (p)
+}
+
+\newcommand{\demoGap}{
+  %% #1: scale
+  \defs{0}
+  \def\scale{.7}
+  \coordinate (TL) at (-4, 3);
+  \coordinate (origin) at (TL);
+  \cycles{1.2}{\span}
+
+  \def\gap{0}
+  \drawwarp{\alpha}{\numwarps}{0}{\gap};
+
+  %% Draw label
+  \coordinate (left) at (origin);
+  \latlabel{\scale}
+
+  %% Draw arrows
+  \def\arrowl{3*\latalu*\unit}
+  \coordinate (ArrowL) at ($(origin)+(\latwarp+\numwarps*\unit+.4, -\numwarps/2*\h)$);
+  \draw [->, >=stealth, thick] (ArrowL) --
+  node[above, midway,scale=\scale] {Add 1 warp} ++(\arrowl,0);
+
+  \coordinate (TL) at ($(origin)+(\latwarp+\numwarps*\unit+.4+\arrowl+.4,0)$);
+  \def\gap{1}
+  \def\numwarps{7}
+  \pgfmathsetmacro\span{\alpha*\latalu+\latmem+\alpha*\gap-\gap+\numwarps-1}
+  \cycles{1.4}{\span}
+  \drawwarp{\alpha}{7}{0}{\gap};
+   %% Draw label
+  \coordinate (left) at (TL);
+  \latlabel{\scale}
+  %% Draw label for gap
+  \node [below, scale=\scale] (gapNode) at ($(TL)+(3*\latalu*\unit+8.5*\unit,-7*\h-.2)$)
+  {gaps};
+  \coordinate (gap) at ($(TL)+(\latalu*\unit+6.5*\unit,-7*\h)$);
+  \foreach \g in {0,1,2,3,4} {
+    \draw [->, >=stealth] (gapNode.north) -| ($(gap)+(\g*\latalu*\unit+\g*\unit,0)$);
+  }
+  \labelCycle{6};
+  %% Draw the victim alu inst
+  \draw [thick, fill=gray] ($(TL)+(\latalu*\unit+\gap*\unit,0)$) rectangle ++(\latalu*\unit, -\h);
+}
+
+\newcommand{\demoSmartSched}{
+  %% #1: scale
+  \defs{0}
+  \def\alpha{4}
+  \def\latalu{4}
+  \def\numwarps{4}
+  \def\latmem{32}
+
+  \pgfmathsetmacro\latwarp{\alpha*\latalu*\unit+\latmem*\unit+\alpha*\gap*\unit-\gap*\unit}
+  \pgfmathsetmacro\span{\alpha*\latalu+\latmem+\alpha*\gap-\gap+\numwarps-1}
+  \pgfmathsetmacro\height{\numwarps*\h}
+  
+  \def\scale{.7}
+
+  %% Draw the old state of the system
+  \coordinate (TL) at (-4, 3);
+  \coordinate (origin) at (TL);
+  \cycles{\height}{\span}
+  \def\gap{0}
+  \drawwarp{\alpha}{\numwarps}{0}{\gap};
+  \coordinate (left) at (TL);
+  \mylabel{\latwarp}{$\Delta T$}{\scale}{above};
+  \coordinate (left) at ($(TL)+(0,-\numwarps*\h)$);
+  \mylabel{.5*\latwarp}{$\Delta T_1$}{\scale}{below};
+  \coordinate (left) at ($(TL)+(.5*\latwarp,-\numwarps*\h)$);
+  \mylabel{.5*\latwarp}{$\Delta T_2$}{\scale}{below};
+
+  %% Draw arrows
+  \def\arrowl{5*\latalu*\unit}
+  \coordinate (ArrowL) at ($(origin)+(\latwarp+\numwarps*\unit+.4, -\numwarps/2*\h)$);
+  \draw [->, >=stealth, thick] (ArrowL) --
+  node[above, midway,scale=\scale] {Add more warps} ++(\arrowl,0);
+
+  %% Draw the new state of the system 
+  \coordinate (TL) at ($(origin)+(\latwarp+\numwarps*\unit+.4+\arrowl+.4,0)$);
+  \coordinate (origin) at (TL);
+  \pgfmathsetmacro\height{\numwarps*\h}
+  \cycles{\height}{\span}
+  \drawwarp{\alpha}{\numwarps}{0}{\gap};
+
+  \coordinate (TL) at ($(TL)+(\alpha*\latalu*\unit,-\numwarps*\h)$);
+  \cycles{\height}{\span}
+  \drawwarp{\alpha}{\numwarps}{4}{\gap};
+
+  \coordinate (TL) at ($(TL)+(\alpha*\latalu*\unit,-\numwarps*\h)$);
+  \pgfmathsetmacro\span{\alpha*\latalu+\latmem+\alpha*\gap-\gap}
+  \cycles{\h}{\span}
+  \drawwarp{\alpha}{1}{8}{\gap};
+
+  \def\numwarps{9}
+  \coordinate (left) at ($(origin)+(0, -\numwarps*\h)$);
+  \mylabel{.5*\latwarp}{$\Delta T_1$}{\scale}{below};
+  \coordinate (left) at ($(origin)+(\latwarp*.5, -\numwarps*\h)$);
+  \mylabel{\latwarp*.5}{$\Delta T_2$}{\scale}{below};
+
+  %% label some cycles
+  \def\numwarps{9}
+  \coordinate (TL) at (origin);
+  \labelCycleAbove{48};
+  \labelCycleAbove{16};
+  \labelCycleAbove{4};
+  \labelCycleAbove{33};
+}
+
+\newcommand{\demoPerfectSched}{
+  %% #1: scale
+  \defs{0}
+  \def\alpha{4}
+  \def\latalu{4}
+  \def\numwarps{4}
+  \def\latmem{35}
+
+  \pgfmathsetmacro\latwarp{\alpha*\latalu*\unit+\latmem*\unit+\alpha*\gap*\unit-\gap*\unit}
+  \pgfmathsetmacro\span{\alpha*\latalu+\latmem+\alpha*\gap-\gap+\numwarps-1}
+  \pgfmathsetmacro\height{\numwarps*\h}
+  
+  \def\scale{.7}
+
+  %% Draw the old state of the system
+  \coordinate (TL) at (-4, 3);
+  \coordinate (origin) at (TL);
+  % \cycles{\height}{\span}
+  % \def\gap{0}
+  % \drawwarp{\alpha}{\numwarps}{0}{\gap};
+  % \coordinate (left) at (TL);
+  % \mylabel{\latwarp}{$\Delta T$}{\scale}{above};
+  % \coordinate (left) at ($(TL)+(0,-\numwarps*\h)$);
+  % \mylabel{.5*\latwarp}{$\Delta T_1$}{\scale}{below};
+  % \coordinate (left) at ($(TL)+(.5*\latwarp,-\numwarps*\h)$);
+  % \mylabel{.5*\latwarp}{$\Delta T_2$}{\scale}{below};
+
+  % %% Draw arrows
+  % \def\arrowl{5*\latalu*\unit}
+  % \coordinate (ArrowL) at ($(origin)+(\latwarp+\numwarps*\unit+.4, -\numwarps/2*\h)$);
+  % \draw [->, >=stealth, thick] (ArrowL) --
+  % node[above, midway,scale=\scale] {Add more warps} ++(\arrowl,0);
+
+  %% Draw the new state of the system 
+  %\coordinate (TL) at ($(origin)+(\latwarp+\numwarps*\unit+.4+\arrowl+.4,0)$);
+  %\coordinate (origin) at (TL);
+  \pgfmathsetmacro\height{\numwarps*\h}
+  \cycles{\height}{\span}
+  \drawwarp{\alpha}{\numwarps}{0}{\gap};
+
+  \coordinate (TL) at ($(TL)+(\alpha*\latalu*\unit,-\numwarps*\h)$);
+  \cycles{\height}{\span}
+  \drawwarp{\alpha}{\numwarps}{4}{\gap};
+
+  \coordinate (TL) at ($(TL)+(\alpha*\latalu*\unit,-\numwarps*\h)$);
+  %\pgfmathsetmacro\span{\alpha*\latalu+\latmem+\alpha*\gap-\gap}
+  \cycles{\height}{\span}
+  \drawwarp{\alpha}{\numwarps}{8}{\gap};
+
+  % \def\numwarps{9}
+  % \coordinate (left) at ($(origin)+(0, -\numwarps*\h)$);
+  % \mylabel{.5*\latwarp}{$\Delta T_1$}{\scale}{below};
+  % \coordinate (left) at ($(origin)+(\latwarp*.5, -\numwarps*\h)$);
+  % \mylabel{\latwarp*.5}{$\Delta T_2$}{\scale}{below};
+
+  %% label some cycles
+  \def\numwarps{12}
+  \coordinate (TL) at (origin);
+  \labelCycle{48};
+  \labelCycleAbove{16};
+  \labelCycleAbove{4};
+  \labelCycleRight{51};
+}
+
+
+\newcommand{\demoGapNew}{
+  %% #1: scale
+  \defs{0}
+  \def\scale{.7}
+  \coordinate (TL) at (-4, 3);
+  \coordinate (origin) at (TL);
+  \cycles{1.2}{\span}
+
+  %\def\gap{0}
+  %\drawwarp{\alpha}{\numwarps}{0}{\gap};
+
+  
+
+  \def\gap{24}
+  \def\numwarps{30}
+  \pgfmathsetmacro\span{\alpha*\latalu+\latmem+\alpha*\gap-\gap+\numwarps-1}
+  \cycles{1.4}{\span}
+  \drawwarp{\alpha}{\numwarps}{0}{\gap};
+   %% Draw label
+  %\coordinate (left) at (TL);
+  %\latlabel{\scale}
+  %% Draw label for gap
+  
+}
+
+\newcommand{\tensor}[4]{
+  %% (TL): predefined points of the TL corner of the tensor
+  %% #1: height
+  %% #2: width
+  %% #3: channel
+  %% #4: unit
+  \def\unit{#4}
+  \def\h{#1}
+  \def\w{#2}
+  \def\c{#3}
+  \pgfmathsetmacro\halfunit{0.5*\unit}
+  \pgfmathsetmacro\smallunit{0.3*\unit}
+
+  % \draw (TL) rectangle ++(\w*\unit, -\h*\unit);
+  %% horizontal lines
+  \foreach \i in {0,...,\h}{
+    \draw ($(TL)+(0,-\i*\unit)$) -- ++(\w*\unit,0);
+  }
+  \foreach \i in {1,...,\c}{
+    \draw ($(TL)+(\i*\halfunit,\i*\smallunit)$) -- ++(\w*\unit,0);
+  }
+  %% vertical lines
+  \foreach \i in {0,...,\w}{
+    \draw ($(TL)+(\i*\unit,0)$) -- ++(0, -\h*\unit);
+  }
+  \foreach \i in {1,...,\c}{
+    \draw ($(TL)+(\w*\unit+\i*\halfunit,\i*\smallunit)$) -- ++(0, -\h*\unit);
+  }
+  %% inclined lines
+  \foreach \i in {0,...,\w}{
+    \draw ($(TL)+(\i*\unit,0)$) -- ++(\c*\halfunit, \c*\smallunit);
+  }
+  \foreach \i in {1,...,\h}{
+    \draw ($(TL)+(\w*\unit,-\i*\unit)$) -- ++(\c*\halfunit,\c*\smallunit);
+  }
+
+  %% define some anchor points
+  \coordinate (backTL) at ($(TL)+(\c*\halfunit, \c*\smallunit)$);
+  \coordinate (backTR) at ($(TL)+(\c*\halfunit+\w*\unit, \c*\smallunit)$);
+}
+
+
+\newcommand{\fillTopParallelogram}[4]{
+  %% (BL) predefined point
+  %% #1: height
+  %% #2: width
+  %% #3: shift
+  %% #4: color
+  \def\h{#1}
+  \def\w{#2}
+  \def\shift{#3}
+  \def\color{#4}
+  \draw [fill=\color] (BL) -- ++(\w,0) -- ++(\shift, \h)
+  -- ++(-\w, 0) -- ++(-\shift, -\h);
+}
+
+\newcommand{\fillSideParallelogram}[4]{
+  %% (BL) predefined point
+  %% #1: height
+  %% #2: width
+  %% #3: shift
+  %% #4: color
+  \def\h{#1}
+  \def\w{#2}
+  \def\shift{#3}
+  \def\color{#4}
+  \draw [fill=\color] (BL) -- ++(\w,\shift) -- ++(0, \h)
+  -- ++(-\w, -\shift) -- ++(0, -\h);
+}
+
+\newcommand{\fillRec}[3]{
+  %% (TL) predefined point
+  %% #1: height
+  %% #2: width
+  %% #3: color
+  \def\h{#1}
+  \def\w{#2}
+  \def\color{#3}
+  \draw [fill=\color] (TL) rectangle ++(\w, -\h);
+}
+
+\newcommand{\colorTensorFront}[4]{
+  %% (TL): predefined points of the TL corner of the tensor
+  %% #1: height
+  %% #2: width
+  %% #3: unit
+  %% #4: color
+  \def\h{#1}
+  \def\w{#2}
+  \def\unit{#3}
+  \def\basecolor{#4}
+
+  \coordinate (orig) at (TL);
+  \coordinate (colorTensorFrontreturn) at (TL);
+  %% Color the front pixels
+  \foreach \row in {1,...,\h}{
+    \foreach \col in {1,...,\w}{
+      \coordinate (TL) at ($(orig)+(\col*\unit-\unit, -\row*\unit+\unit)$);
+      \fillRec{\unit}{\unit}{\basecolor}
+    }
+  }
+
+  %% restore TL
+  \coordinate (TL) at (colorTensorFrontreturn);
+}
+
+\newcommand{\colorTensorTopAndSide}[5]{
+  %% (TL): predefined points of the TL corner of the tensor
+  %% #1: height
+  %% #2: width
+  %% #3: channel
+  %% #4: unit
+  %% #5: color
+  \def\h{#1}
+  \def\w{#2}
+  \def\c{#3}
+  \def\unit{#4}
+  \def\basecolor{#5}
+  \pgfmathsetmacro\halfunit{0.5*\unit}
+  \pgfmathsetmacro\smallunit{0.3*\unit}
+
+  \coordinate (orig) at (TL);
+  \coordinate (colorTensorTSreturn) at (TL);
+
+  %% Color the parallelograms with a gradient of basecolor
+  \coordinate (orig) at ($(orig)+(-\halfunit, -\smallunit)$);
+  \foreach \ch [count=\i from 0] in {1,...,\c}{
+    \pgfmathsetmacro\colorratio{100-\i*30}
+    \def\thisCol{\basecolor!\colorratio!white}
+    \coordinate (orig) at ($(orig)+(\halfunit, \smallunit)$);
+    \foreach \row in {1,...,\h}{
+      \coordinate (BL) at ($(orig)+(\w*\unit,-\row*\unit)$);
+      \fillSideParallelogram{\unit}{\halfunit}{\smallunit}{\thisCol}
+    }
+    \foreach \i in {1,...,\w}{
+      \coordinate (BL) at ($(orig)+(\i*\unit-\unit,0)$);
+      \fillTopParallelogram{\smallunit}{\unit}{\halfunit}{\thisCol}
+    }
+  }
+
+  %% restore TL
+  \coordinate (TL) at (colorTensorTSreturn);
+}
+
+\newcommand{\colorTensor}[5]{
+  %% (TL): predefined points of the TL corner of the tensor
+  %% #1: height
+  %% #2: width
+  %% #3: channel
+  %% #4: unit
+  %% #5: color
+  \def\h{#1}
+  \def\w{#2}
+  \def\c{#3}
+  \def\unit{#4}
+  \def\basecolor{#5}
+
+  \coordinate (colorTensorreturn) at (TL);
+
+  \colorTensorFront{#1}{#2}{#4}{#5}
+  \colorTensorTopAndSide{#1}{#2}{#3}{#4}{#5}
+  
+  %% restore TL
+  \coordinate (TL) at (colorTensorreturn);
+}
+
+\newcommand{\filterTensor}[4]{
+  %% (TL): predefined points of the TL corner of the first tensor
+  %% #1: height
+  %% #2: width
+  %% #3: channel
+  %% #4: unit
+  \def\unit{#4}
+  \def\h{#1}
+  \def\w{#2}
+  \def\c{#3}
+
+  \coordinate (filterTensorreturn) at (TL);
+  %% Draw first filer/kernel and dimension names
+  \tensor{#1}{#2}{#3}{#4}
+  \colorTensor{#1}{#2}{#3}{#4}{\firstCol}
+  \node  [scale=1.5, left] at ($(TL)+(0, -0.5*\h*\unit)$) {$``y"$};
+  \node  [scale=1.5, below] at ($(TL)+(0.5*\w*\unit, -\h*\unit)$) {$``x"$};
+  \node  [scale=1.5, above left] at ($(TL)+(0.5*\c*0.5*\unit, 0.5*\c*0.3*\unit)$) {$``c"$};
+  \coordinate (backTL1) at (backTL);
+  %% Draw second filter/kernel
+  \coordinate (TL) at ($(TL)+(\w*\unit+0.5*\c*\unit+2*\unit,0)$);
+  \coordinate (secondTL) at (TL);
+  \tensor{#1}{#2}{#3}{#4}
+  \colorTensor{#1}{#2}{#3}{#4}{\secondCol}
+  %% Draw last filter/kernel
+  \coordinate (TL) at ($(TL)+(\w*\unit+0.5*\c*\unit+6*\unit,0)$);
+  \tensor{#1}{#2}{#3}{#4}
+  \colorTensor{#1}{#2}{#3}{#4}{\thirdCol}
+  \node [scale=2] at ($(TL)+(-2*\unit,-0.5*\h*\unit)$) {$\cdots$};
+  \coordinate (backTR3) at (backTR);
+  %% Label dimension k
+  \draw [thick, decorate, decoration = {calligraphic brace,amplitude=5pt}]
+  ($(backTL1)+(0,0.3*\unit)$) --  ($(backTR3)+(0,0.3*\unit)$)
+  node [scale=1.5, pos=0.5, above, yshift=.5em] {$``k"$};
+
+  %% restore TL
+  \coordinate (TL) at (filterTensorreturn);
+}
+
+\newcommand{\fillRow}[5]{
+  %% (TL): predefined points of the TL corner of the row
+  %% #1: height
+  %% #2: width
+  %% #3: channel
+  %% #4: unit
+  %% #5: basecolor
+  \def\h{#1}
+  \def\w{#2}
+  \def\c{#3}
+  \def\unit{#4}
+  \def\basecolor{#5}
+  \pgfmathsetmacro\temp{\h*\w*\unit}
+  \coordinate (fillRowreturn) at (TL);
+  \coordinate (TL) at ($(fillRowreturn)+(-\temp,0)$);
+  %\node at (return) {$\temp$};
+  \foreach \ch [count=\i from 0] in {1,...,\c}{
+    \pgfmathsetmacro\colorratio{100-\i*30}
+    \def\thisCol{\basecolor!\colorratio!white}
+    \coordinate (TL) at ($(TL)+(\temp,0)$);
+    \fillRec{\unit}{\temp}{\thisCol}
+  }
+
+  %% restore TL
+  \coordinate (TL) at (fillRowreturn);
+}
+
+\newcommand{\filterGemm}[5]{
+  %% (TL): predefined points of the TL corner of the matrix
+  %% #1: height
+  %% #2: width
+  %% #3: channel
+  %% #4: k
+  %% #5: unit
+  \def\h{#1}
+  \def\w{#2}
+  \def\c{#3}
+  \def\k{#4}
+  \def\unit{#5}
+  \coordinate (fillGemmreturn) at (TL);
+
+  \fillRow{#1}{#2}{#3}{#5}{\firstCol}
+  \coordinate (TL) at ($(TL)+(0,-\unit)$);
+  \fillRow{#1}{#2}{#3}{#5}{\secondCol}
+  \coordinate (TL) at ($(fillGemmreturn)+(0,-\k*\unit)$);
+  \fillRow{#1}{#2}{#3}{#5}{\thirdCol}
+
+  \pgfmathsetmacro\colums{\h*\w*\c}
+  \foreach \row in {1,...,\k}{
+    \draw [thick] ($(fillGemmreturn)+(0,-\row*\unit+\unit)$) -- ++(\colums*\unit, 0);
+  }
+  \foreach \col in {0,...,\colums}{
+    \draw [thick] ($(fillGemmreturn)+(\col*\unit,0)$) -- ++(0,-\k*\unit-\unit);
+  }
+
+  %% Labels
+  %% gemmM
+  \coordinate (TL) at (fillGemmreturn);
+  \node [left, scale=1.2] at ($(TL)+(0,-0.5*\unit)$) {$k=0$};
+  \node [left, scale=1.2] at ($(TL)+(0,-1.5*\unit)$) {$k=1$};
+  \node [left, scale=1.2] at ($(TL)+(0,-10.5*\unit)$) {$k=K-1$};
+  \draw [thick, decorate, decoration = {calligraphic brace,amplitude=5pt,mirror}]
+  ($(TL)+(-6*\unit,0)$) --  ++(0,-11*\unit)
+  node [scale=1.5, pos=0.5, left, xshift=-.5em] (gemmM) {$``gemmM"$};
+  \draw [->, >=stealth, thick] (gemmM.south) -- ++(0, -2*\unit)
+  node [below, scale=1.5, xshift=-1em] {PassThrough[$``k"$]};
+  %% gemmK
+  \node [below, scale=1.5] (gemmK)  at ($(TL)+(\c*\h*\w*\unit*0.5,-11.5*\unit)$)
+  {$``gemmK"$};
+  \draw [->, >=stealth, thick] (gemmK.south) -- ++(0,-2*\unit)
+  node [below, scale=1.5] {Merge\{$C$,$Y$,$X$\}[$``c"$,$``y"$,$``x"$]};
+
+  %% y,c dimension info on the matrix
+  \foreach \ch [count=\ci from 0] in {1,...,\c}{
+    \foreach \row [count=\y from 0] in {1,...,\h}{
+      \draw [thick, decorate, decoration = {calligraphic brace,amplitude=5pt}]
+      ($(fillGemmreturn)+(\ci*\w*\h*\unit+\y*\w*\unit,0)$) --  ++(\w*\unit,0)
+      node [scale=1, pos=0.5, above, yshift=.3em] {$y=\y$};
+    }
+    \draw [thick, decorate, decoration = {calligraphic brace,amplitude=5pt}]
+    ($(fillGemmreturn)+(\ci*\w*\h*\unit,2*\unit)$) --  ++(\h*\w*\unit,0)
+    node [scale=1, pos=0.5, above, yshift=.3em] {$c=\ci$};
+  }
+  
+  %% restore TL
+  \coordinate (TL) at (fillGemmreturn);
+}
+
+\newcommand{\pickElemInMatrix}[3]{
+  %% (TL) the TL of the matrix
+  %% #1: row
+  %% #2: col
+  %% #3: unit
+  \def\row{#1}
+  \def\col{#2}
+  \def\unit{#3}
+  \coordinate (TL) at ($(TL)+(\col*\unit,-\row*\unit)$);
+  \fillRec{\unit}{\unit}{blue}
+  %\draw [thick] (elemTL) -- ++(\unit,-\unit)
+  \node [right, inner sep=0.3] at ($(TL)+(\unit,-0.5*\unit)$) {$\mathcal{P}$};
+  %\draw [thick] ($(elemTL)+(0,-\unit)$) -- ++(\unit,\unit);
+}
+
+\newcommand{\pickElemInTensor}[1]{
+  %% (TL) the TL of the tensor
+  %% #1: unit
+  \def\unit{#1}
+  \pgfmathsetmacro\halfunit{0.5*\unit}
+  \pgfmathsetmacro\smallunit{0.3*\unit}
+
+  \coordinate (BL) at ($(TL)+(2*\unit+2*\halfunit,2*\smallunit)$);  
+  \fillTopParallelogram{\smallunit}{\unit}{\halfunit}{blue}
+
+  \coordinate (BL) at ($(TL)+(3*\unit+2*\halfunit,-\unit+2*\smallunit)$);
+  \fillSideParallelogram{\unit}{\halfunit}{\smallunit}{blue}
+  \node [above right] at ($(BL)+(\halfunit,\smallunit)$) {$\mathcal{P}$};
+  
+}
+
+\newcommand{\filterTransform}{
+  %% (TL): predefined TL of the node TL corner
+  \node [scale=1, below right, align=left] at (TL)
+  {$\mathcal{P}_\text{gemm}=[1,20]$\\
+    $\mathcal{P}_\text{tensor}=[\mathcal{P}_k,\mathcal{P}_c,\mathcal{P}_y,\mathcal{P}_x]$\\
+    $\mathcal{P}_k=\mathcal{P}_\text{gemmM}=1$\\
+    $\mathcal{P}_c=\floor{\mathcal{P}_\text{gemmK}/(Y\times X)}=2$\\
+    $\mathcal{P}_y=\floor{\mathcal{P}_\text{gemmK}\%(Y\times X)/X}=0$\\
+    $\mathcal{P}_x=\floor{\mathcal{P}_\text{gemmK}\%(Y\times X)\%X}=2$\\
+    $\mathcal{P}_\text{tensor}=[1,2,0,2]$};
+}
+
+
+\newcommand{\inputTensor}[6]{
+  %% (TL): predefined points of the TL corner of the first tensor
+  %% #1: height
+  %% #2: width
+  %% #3: channel
+  %% #4: unit
+  %% #5: h dim name
+  %% #6: w dim name
+  \def\unit{#4}
+  \def\h{#1}
+  \def\w{#2}
+  \def\c{#3}
+
+  \coordinate (inputTensorreturn) at (TL);
+  %% Draw first input image and dimension names
+  \tensor{#1}{#2}{#3}{#4}
+  \colorTensor{#1}{#2}{#3}{#4}{\firstCol}
+  \node  [scale=1.5, left] at ($(TL)+(0, -0.5*\h*\unit)$) {#5};
+  \node  [scale=1.5, below] at ($(TL)+(0.5*\w*\unit, -\h*\unit)$) {#6};
+  \node  [scale=1.5, above left] at ($(TL)+(0.5*\c*0.5*\unit, 0.5*\c*0.3*\unit)$) {$``c"$};
+  \coordinate (backTL1) at (backTL);
+  %% Draw second input image
+  \coordinate (TL) at ($(TL)+(\w*\unit+0.5*\c*\unit+2*\unit,0)$);
+  \tensor{#1}{#2}{#3}{#4}
+  \colorTensor{#1}{#2}{#3}{#4}{\secondCol}
+  %% Draw last input image
+  \coordinate (TL) at ($(TL)+(\w*\unit+0.5*\c*\unit+6*\unit,0)$);
+  \tensor{#1}{#2}{#3}{#4}
+  \colorTensor{#1}{#2}{#3}{#4}{\thirdCol}
+  \node [scale=2] at ($(TL)+(-2*\unit,-0.5*\h*\unit)$) {$\cdots$};
+  \coordinate (backTR3) at (backTR);
+  %% Label dimension n
+  \draw [thick, decorate, decoration = {calligraphic brace,amplitude=5pt}]
+  ($(backTL1)+(0,0.3*\unit)$) --  ($(backTR3)+(0,0.3*\unit)$)
+  node [scale=1.5, pos=0.5, above, yshift=.5em] {$``n"$};
+
+  %% restore TL
+  \coordinate (TL) at (inputTensorreturn);
+}
+
+\newcommand{\inputTensorPad}[3]{
+  %% (TL): predefined points of the TL corner of the first tensor
+  %% #1: height
+  %% #2: width
+  %% #3: unit
+  \def\h{#1}
+  \def\w{#2}
+  \def\unit{#3}
+
+  \coordinate (inputTensorreturn) at (TL);
+  %% First
+  \coordinate (TL) at ($(TL)+(\unit, -\unit)$);
+  \colorTensorFront{#1}{#2}{#3}{purple}
+  %% Second
+  \coordinate (TL) at ($(TL)+(\w*\unit+0.5*\c*\unit+4*\unit,0)$);
+  \colorTensorFront{#1}{#2}{#3}{blue!50!gray}
+  %% Last
+  \coordinate (TL) at ($(TL)+(\w*\unit+0.5*\c*\unit+8*\unit,0)$);
+  \colorTensorFront{#1}{#2}{#3}{orange}
+  
+  %% restore TL
+  \coordinate (TL) at (inputTensorreturn);
+}
+
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "volkov_model"
+%%% End:

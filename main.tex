@@ -1,0 +1,113 @@
+\input{preamble}
+
+\begin{document}
+
+\title{Coordinate Transformations}
+
+\maketitle
+
+%\tikzexternaldisable
+\tikzsetnextfilename{filter_tensor}
+\begin{figure}[!h]
+  \centering
+  \begin{tikzpicture}
+    \def\firstCol{red}
+    \def\secondCol{gray}
+    \def\thirdCol{brown}
+    \def\unitTensor{0.5}
+    \def\unitMatrix{0.4}
+    \coordinate (TL) at (0,0);
+    \filterTensor{3}{3}{3}{0.5}
+    \coordinate (TL) at (secondTL);
+    \pickElemInTensor{\unitTensor}
+    
+    \coordinate (TL) at (0, -4);
+    \filterGemm{3}{3}{3}{10}{\unitMatrix}
+    \pickElemInMatrix{1}{20}{\unitMatrix}
+%
+    \coordinate (TL) at (-6,0);
+    \filterTransform
+    %\coordinate (BL) at (0,0);
+    %\coordinate (TL) at (0,0);
+    % \fillTopParallelogram{0.15}{0.5}{0.25}{red}
+    %\colorTensor{3}{3}{3}{.5}{red}
+    %\coordinate (BL) at ($(BL)+(1.5,-0.5)$);
+    %\fillSideParallelogram{0.5}{0.25}{0.15}{yellow}
+    %\fillRec{0.5}{0.5}{blue}
+  \end{tikzpicture}
+  \caption{Coordinate transformation of filter tensor $\{``k",``c",``y",``x"\}$}
+  \label{fig:filter_tensor}
+\end{figure}
+
+In implicit gemm, tensors are converted to matrices and convolution
+is performed as matrix multiplication, i.e. GEMM.
+Cooridinate transformation helps figure out the coordinates of a data in the
+tensor given its coordinates in the matrix, which avoids data movement in memory
+during tensor-to-matrix conversions.
+
+We use the following three concepts to describe a dimentsion
+\begin{itemize}
+\item name. A string used to reference the dimension.
+\item dim. The index of this dimension in the tensor or matrix.
+  For example, for the filter tensor $\{``c",``y",``x"\}$,
+  $``c"$ is dim 2, $``y"$ is dim 1, and $``x"$ is dim 0.
+\item size. Number of elements along this dimension.
+\end{itemize}
+
+To understand coordinate transformation, we first figure out where an element
+in the tensor should be in the matrix.
+Then we figure out the relationship between the coordinate of the element in the
+matrix and its coordinate in the tensor.
+During this process, we also understand what a transform is.
+
+\Fig \ref{fig:filter_tensor} shows the coordinate transformation of the filter tensor
+in a forward convolution context.
+
+\tikzexternaldisable
+%\tikzsetnextfilename{input_tensor}
+\begin{figure}[!h]
+  \centering
+  \begin{tikzpicture}
+    \def\firstCol{purple}
+    \def\secondCol{blue!50!gray}
+    \def\thirdCol{orange}
+    \coordinate (TL) at (0,0);
+    \inputTensor{8}{8}{3}{0.3}{$``hi"$}{$``wi"$}
+
+    \draw [->,>=stealth, ultra thick] ($(TL)+(5,-3)$) -- ++(0, -2)
+    node [right, scale=1.5, pos=0.5] {Pad\{1,1,1,1\}[$``hi"$, $``wi"$]};
+    
+    
+    \def\firstCol{purple!60!white}
+    \def\secondCol{blue!50!gray!60!white}
+    \def\thirdCol{orange!60!white}
+    \coordinate (TL) at (-1, -6);
+    \inputTensor{10}{10}{3}{0.3}{$``hipad"$}{$``wipad"$}
+    \inputTensorPad{8}{8}{0.3}
+
+    \coordinate (TL) at ($(TL)+(-1, -6)$);
+    
+
+    
+    %\filterGemm{3}{3}{3}{10}{0.4}
+    %\pickElem{1}{12}{0.4}
+    %\coordinate (BL) at (0,0);
+    %\coordinate (TL) at (0,0);
+    % \fillTopParallelogram{0.15}{0.5}{0.25}{red}
+    %\colorTensor{3}{3}{3}{.5}{red}
+    %\coordinate (BL) at ($(BL)+(1.5,-0.5)$);
+    %\fillSideParallelogram{0.5}{0.25}{0.15}{yellow}
+    %\fillRec{0.5}{0.5}{blue}
+  \end{tikzpicture}
+  \caption{Coordinate transformation of input tensor $\{``n",``c",``hi",``wi"\}$}
+  \label{fig:input_tensor}
+\end{figure}
+
+
+\end{document}
+
+%%% Local Variables:
+%%% TeX-command-extra-options: "-shell-escape"
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
