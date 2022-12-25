@@ -698,18 +698,20 @@
   \coordinate (TL) at (colorTensorFrontreturn);
 }
 
-\newcommand{\colorTensorTopAndSide}[5]{
+\newcommand{\colorTensorTopAndSide}[6]{
   %% (TL): predefined points of the TL corner of the tensor
   %% #1: height
   %% #2: width
   %% #3: channel
   %% #4: unit
   %% #5: color
+  %% #6: step in color gradient
   \def\h{#1}
   \def\w{#2}
   \def\c{#3}
   \def\unit{#4}
   \def\basecolor{#5}
+  \def\colorStep{#6}
   \pgfmathsetmacro\halfunit{0.5*\unit}
   \pgfmathsetmacro\smallunit{0.3*\unit}
 
@@ -719,7 +721,7 @@
   %% Color the parallelograms with a gradient of basecolor
   \coordinate (orig) at ($(orig)+(-\halfunit, -\smallunit)$);
   \foreach \ch [count=\i from 0] in {1,...,\c}{
-    \pgfmathsetmacro\colorratio{100-\i*30}
+    \pgfmathsetmacro\colorratio{100-\i*\colorStep}
     \def\thisCol{\basecolor!\colorratio!white}
     \coordinate (orig) at ($(orig)+(\halfunit, \smallunit)$);
     \foreach \row in {1,...,\h}{
@@ -736,62 +738,67 @@
   \coordinate (TL) at (colorTensorTSreturn);
 }
 
-\newcommand{\colorTensor}[5]{
+\newcommand{\colorTensor}[6]{
   %% (TL): predefined points of the TL corner of the tensor
   %% #1: height
   %% #2: width
   %% #3: channel
   %% #4: unit
   %% #5: color
+  %% #6: step in color gradient
   \def\h{#1}
   \def\w{#2}
   \def\c{#3}
   \def\unit{#4}
   \def\basecolor{#5}
+  \def\colorStep{#6}
 
   \coordinate (colorTensorreturn) at (TL);
 
   \colorTensorFront{#1}{#2}{#4}{#5}
-  \colorTensorTopAndSide{#1}{#2}{#3}{#4}{#5}
+  \colorTensorTopAndSide{#1}{#2}{#3}{#4}{#5}{#6}
   
   %% restore TL
   \coordinate (TL) at (colorTensorreturn);
 }
 
-\newcommand{\filterTensor}[4]{
+\newcommand{\filterTensor}[5]{
   %% (TL): predefined points of the TL corner of the first tensor
   %% #1: height
   %% #2: width
   %% #3: channel
   %% #4: unit
+  %% #5: color step
   \def\unit{#4}
   \def\h{#1}
   \def\w{#2}
   \def\c{#3}
+  \def\colorStep{#5}
 
   \coordinate (filterTensorreturn) at (TL);
   %% Draw first filer/kernel and dimension names
   \tensor{#1}{#2}{#3}{#4}
-  \colorTensor{#1}{#2}{#3}{#4}{\firstCol}
+  \colorTensor{#1}{#2}{#3}{#4}{\firstCol}{#5}
   \node  [scale=1.5, left] at ($(TL)+(0, -0.5*\h*\unit)$) {$``y"$};
   \node  [scale=1.5, below] at ($(TL)+(0.5*\w*\unit, -\h*\unit)$) {$``x"$};
   \node  [scale=1.5, above left] at ($(TL)+(0.5*\c*0.5*\unit, 0.5*\c*0.3*\unit)$) {$``c"$};
   \coordinate (backTL1) at (backTL);
   %% Draw second filter/kernel
-  \coordinate (TL) at ($(TL)+(\w*\unit+0.5*\c*\unit+2*\unit,0)$);
+  \coordinate (TL) at ($(TL)+(\w*\unit+0.5*\c*\unit+.6*\unit,0)$);
   \coordinate (secondTL) at (TL);
   \tensor{#1}{#2}{#3}{#4}
-  \colorTensor{#1}{#2}{#3}{#4}{\secondCol}
+  \colorTensor{#1}{#2}{#3}{#4}{\secondCol}{#5}
+  \coordinate (midB) at ($(TL)+(0.5*\w*\unit,-\h*\unit)$);
   %% Draw last filter/kernel
-  \coordinate (TL) at ($(TL)+(\w*\unit+0.5*\c*\unit+6*\unit,0)$);
+  \coordinate (TL) at ($(TL)+(\w*\unit+0.5*\c*\unit+2*\unit,0)$);
   \tensor{#1}{#2}{#3}{#4}
-  \colorTensor{#1}{#2}{#3}{#4}{\thirdCol}
-  \node [scale=2] at ($(TL)+(-2*\unit,-0.5*\h*\unit)$) {$\cdots$};
+  \colorTensor{#1}{#2}{#3}{#4}{\thirdCol}{#5}
+  \node [scale=1, left, xshift=.2em] at ($(TL)+(0,-0.5*\h*\unit)$) {$\cdots$};
   \coordinate (backTR3) at (backTR);
   %% Label dimension k
   \draw [thick, decorate, decoration = {calligraphic brace,amplitude=5pt}]
   ($(backTL1)+(0,0.3*\unit)$) --  ($(backTR3)+(0,0.3*\unit)$)
-  node [scale=1.5, pos=0.5, above, yshift=.5em] {$``k"$};
+  node [scale=1.5, pos=0.5, above, yshift=.5em] (labelK) {$``k"$};
 
   %% restore TL
   \coordinate (TL) at (filterTensorreturn);
@@ -824,61 +831,87 @@
   \coordinate (TL) at (fillRowreturn);
 }
 
-\newcommand{\filterGemm}[5]{
+\newcommand{\fillColumn}[5]{
+  %% (TL): predefined points of the TL corner of the column
+  %% #1: height
+  %% #2: width
+  %% #3: channel
+  %% #4: unit
+  %% #5: basecolor
+  \def\h{#1}
+  \def\w{#2}
+  \def\c{#3}
+  \def\unit{#4}
+  \def\basecolor{#5}
+  \pgfmathsetmacro\temp{\h*\w*\unit}
+  \coordinate (fillColreturn) at (TL);
+  \coordinate (TL) at ($(fillColreturn)+(0,\temp)$);
+  \foreach \ch [count=\i from 0] in {1,...,\c}{
+    \pgfmathsetmacro\colorratio{100-\i*30}
+    \def\thisCol{\basecolor!\colorratio!white}
+    \coordinate (TL) at ($(TL)+(0, -\temp)$);
+    \fillRec{\temp}{\unit}{\thisCol}
+  }
+
+  %% restore TL
+  \coordinate (TL) at (fillColreturn);
+}
+
+\newcommand{\filterGemmA}[6]{
   %% (TL): predefined points of the TL corner of the matrix
   %% #1: height
   %% #2: width
   %% #3: channel
   %% #4: k
   %% #5: unit
+  %% #6: scale
   \def\h{#1}
   \def\w{#2}
   \def\c{#3}
   \def\k{#4}
   \def\unit{#5}
+  \def\scale{#6}
   \coordinate (fillGemmreturn) at (TL);
 
   \fillRow{#1}{#2}{#3}{#5}{\firstCol}
   \coordinate (TL) at ($(TL)+(0,-\unit)$);
   \fillRow{#1}{#2}{#3}{#5}{\secondCol}
-  \coordinate (TL) at ($(fillGemmreturn)+(0,-\k*\unit)$);
+  \coordinate (TL) at ($(fillGemmreturn)+(0,-\k*\unit+\unit)$);
   \fillRow{#1}{#2}{#3}{#5}{\thirdCol}
 
   \pgfmathsetmacro\colums{\h*\w*\c}
-  \foreach \row in {1,...,\k}{
-    \draw [thick] ($(fillGemmreturn)+(0,-\row*\unit+\unit)$) -- ++(\colums*\unit, 0);
+  \foreach \row [count=\ri from 0] in {1,...,\k}{
+    \draw [thick] ($(fillGemmreturn)+(0,-\ri*\unit)$) -- ++(\colums*\unit, 0);
   }
   \foreach \col in {0,...,\colums}{
-    \draw [thick] ($(fillGemmreturn)+(\col*\unit,0)$) -- ++(0,-\k*\unit-\unit);
+    \draw [thick] ($(fillGemmreturn)+(\col*\unit,0)$) -- ++(0,-\k*\unit);
   }
 
   %% Labels
   %% gemmM
   \coordinate (TL) at (fillGemmreturn);
-  \node [left, scale=1.2] at ($(TL)+(0,-0.5*\unit)$) {$k=0$};
-  \node [left, scale=1.2] at ($(TL)+(0,-1.5*\unit)$) {$k=1$};
-  \node [left, scale=1.2] at ($(TL)+(0,-10.5*\unit)$) {$k=K-1$};
-  \draw [thick, decorate, decoration = {calligraphic brace,amplitude=5pt,mirror}]
-  ($(TL)+(-6*\unit,0)$) --  ++(0,-11*\unit)
-  node [scale=1.5, pos=0.5, left, xshift=-.5em] (gemmM) {$``gemmM"$};
-  \draw [->, >=stealth, thick] (gemmM.south) -- ++(0, -2*\unit)
-  node [below, scale=1.5, xshift=-1em] {PassThrough[$``k"$]};
+  \node [right, scale=0.7*\scale] at ($(TL)+(\colums*\unit,-0.5*\unit)$) {$k=0$};
+  \node [right, scale=0.7*\scale] at ($(TL)+(\colums*\unit,-1.5*\unit)$) {$k=1$};
+  \node [right, scale=0.7*\scale] at ($(TL)+(\colums*\unit,-\k*\unit+.5*\unit)$) {$k=K-1$};
+  \node [scale=1.5*\scale, rotate=90, above] (gemmM) at ($(TL)+(0, -0.5*\k*\unit)$) {$``gemmM"$};
+  \draw [->, >=stealth, thick] (gemmM.north) -- ++(-0.5*\scale, 0)
+  node [above, scale=1.5*\scale, rotate=90] {PassThrough[$``k"$]};
   %% gemmK
-  \node [below, scale=1.5] (gemmK)  at ($(TL)+(\c*\h*\w*\unit*0.5,-11.5*\unit)$)
+  \node [below, scale=1.5*\scale] (gemmK)  at ($(TL)+(\c*\h*\w*\unit*0.1,-\k*\unit)$)
   {$``gemmK"$};
-  \draw [->, >=stealth, thick] (gemmK.south) -- ++(0,-2*\unit)
-  node [below, scale=1.5] {Merge\{$C$,$Y$,$X$\}[$``c"$,$``y"$,$``x"$]};
+  \draw [->, >=stealth, thick] (gemmK.east) -- ++(0.5*\scale, 0)
+  node [right, scale=1.5*\scale] {Merge[$``c"$,$``y"$,$``x"$]};
 
   %% y,c dimension info on the matrix
   \foreach \ch [count=\ci from 0] in {1,...,\c}{
     \foreach \row [count=\y from 0] in {1,...,\h}{
-      \draw [thick, decorate, decoration = {calligraphic brace,amplitude=5pt}]
-      ($(fillGemmreturn)+(\ci*\w*\h*\unit+\y*\w*\unit,0)$) --  ++(\w*\unit,0)
-      node [scale=1, pos=0.5, above, yshift=.3em] {$y=\y$};
+      \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt*\scale}]
+      ($(fillGemmreturn)+(\ci*\w*\h*\unit+\y*\w*\unit,.1)$) --  ++(\w*\unit,0)
+      node [scale=.7*\scale, pos=0.5, above, yshift=.3em] {$y=\y$};
     }
-    \draw [thick, decorate, decoration = {calligraphic brace,amplitude=5pt}]
+    \draw [thick, decorate, decoration = {calligraphic brace,amplitude=5pt*\scale}]
     ($(fillGemmreturn)+(\ci*\w*\h*\unit,2*\unit)$) --  ++(\h*\w*\unit,0)
-    node [scale=1, pos=0.5, above, yshift=.3em] {$c=\ci$};
+    node [scale=1*\scale, pos=0.5, above, yshift=.3em] {$c=\ci$};
   }
   
   %% restore TL
@@ -896,7 +929,7 @@
   \coordinate (TL) at ($(TL)+(\col*\unit,-\row*\unit)$);
   \fillRec{\unit}{\unit}{blue}
   %\draw [thick] (elemTL) -- ++(\unit,-\unit)
-  \node [right, inner sep=0.3] at ($(TL)+(\unit,-0.5*\unit)$) {$\mathcal{P}$};
+  %\node [right, inner sep=0.3] at ($(TL)+(\unit,-0.5*\unit)$) {$\mathcal{P}$};
   %\draw [thick] ($(elemTL)+(0,-\unit)$) -- ++(\unit,\unit);
 }
 
@@ -912,7 +945,7 @@
 
   \coordinate (BL) at ($(TL)+(3*\unit+2*\halfunit,-\unit+2*\smallunit)$);
   \fillSideParallelogram{\unit}{\halfunit}{\smallunit}{blue}
-  \node [above right] at ($(BL)+(\halfunit,\smallunit)$) {$\mathcal{P}$};
+  %\node [above right] at ($(BL)+(\halfunit,\smallunit)$) {$\mathcal{P}$};
   
 }
 
@@ -929,7 +962,7 @@
 }
 
 
-\newcommand{\inputTensor}[6]{
+\newcommand{\inputTensor}[7]{
   %% (TL): predefined points of the TL corner of the first tensor
   %% #1: height
   %% #2: width
@@ -937,29 +970,34 @@
   %% #4: unit
   %% #5: h dim name
   %% #6: w dim name
+  %% #7: color step
   \def\unit{#4}
   \def\h{#1}
   \def\w{#2}
   \def\c{#3}
+  \def\colorStep{#7}
 
   \coordinate (inputTensorreturn) at (TL);
   %% Draw first input image and dimension names
   \tensor{#1}{#2}{#3}{#4}
-  \colorTensor{#1}{#2}{#3}{#4}{\firstCol}
+  \colorTensor{#1}{#2}{#3}{#4}{\firstCol}{#7}
   \node  [scale=1.5, left] at ($(TL)+(0, -0.5*\h*\unit)$) {#5};
   \node  [scale=1.5, below] at ($(TL)+(0.5*\w*\unit, -\h*\unit)$) {#6};
   \node  [scale=1.5, above left] at ($(TL)+(0.5*\c*0.5*\unit, 0.5*\c*0.3*\unit)$) {$``c"$};
   \coordinate (backTL1) at (backTL);
+  \coordinate (firstBR) at ($(TL)+(\w*\unit,-\h*\unit)$);
   %% Draw second input image
   \coordinate (TL) at ($(TL)+(\w*\unit+0.5*\c*\unit+2*\unit,0)$);
   \tensor{#1}{#2}{#3}{#4}
-  \colorTensor{#1}{#2}{#3}{#4}{\secondCol}
+  \colorTensor{#1}{#2}{#3}{#4}{\secondCol}{#7}
+  \coordinate (secondmidB) at ($(TL)+(0.5*\w*\unit,-\h*\unit)$);
   %% Draw last input image
   \coordinate (TL) at ($(TL)+(\w*\unit+0.5*\c*\unit+6*\unit,0)$);
   \tensor{#1}{#2}{#3}{#4}
-  \colorTensor{#1}{#2}{#3}{#4}{\thirdCol}
+  \colorTensor{#1}{#2}{#3}{#4}{\thirdCol}{#7}
   \node [scale=2] at ($(TL)+(-2*\unit,-0.5*\h*\unit)$) {$\cdots$};
   \coordinate (backTR3) at (backTR);
+  \coordinate (thirdBL) at ($(TL)+(0,-\h*\unit)$);
   %% Label dimension n
   \draw [thick, decorate, decoration = {calligraphic brace,amplitude=5pt}]
   ($(backTL1)+(0,0.3*\unit)$) --  ($(backTR3)+(0,0.3*\unit)$)
@@ -993,7 +1031,255 @@
   \coordinate (TL) at (inputTensorreturn);
 }
 
+\newcommand{\inputTensorBreakDown}[6]{
+  %% (TL): predefined points of the TL corner of the first tensor
+  %% #1: height
+  %% #2: width
+  %% #3: channel
+  %% #4: unit
+  %% #5: basecolor
+  %% #6: color step
+  
+  \def\h{#1}
+  \def\w{#2}
+  \def\c{#3}
+  \def\unit{#4}
+  \def\basecolor{#5}
+  \def\colorStep{#6}
+  \pgfmathsetmacro\halfunit{0.5*\unit}
+  \pgfmathsetmacro\smallunit{0.3*\unit}
+  
+  \coordinate (inputEmbedreturn) at (TL);
+  \node [left] at ($(TL)+(0,-0.5*\h*\unit)$) {$``y"$};
+  \node [below] at ($(TL)+(0.5*\w*\unit,-\h*\unit)$) {$``x"$};
+  \node [above] at (TL) {$``c"$};
+  \foreach \x in {0, 6, 14}{
+    \foreach \y in {0, -6, -14}{
+      \coordinate (TL) at ($(inputEmbedreturn)+(\x*\unit, \y*\unit)$);
+      \tensor{#1}{#2}{#3}{#4}
+      \colorTensor{#1}{#2}{#3}{#4}{#5}{#6}
+    }
+    \node [rotate=90,scale=1.5,below right] at ($(inputEmbedreturn)+(\x*\unit+\unit, -13*\unit)$)
+    {$\cdots$};
+  }
+  \foreach \y in {0,-6,-14} {
+    \node [scale=1.5,left] at ($(inputEmbedreturn)+(14*\unit, \y*\unit-1.5*\unit)$)
+    {$\cdots$};
+  }
+  \node [rotate=-45,scale=1.5,left] at ($(inputEmbedreturn)+(13*\unit, -13*\unit)$)
+  {$\cdots$};
 
+  
+  %% restore TL
+  \coordinate (TL) at (inputEmbedreturn);
+}
+
+\newcommand{\inputTensorAfterEmbed}[5]{
+  %% (TL): predefined points of the TL corner of the first tensor
+  %% #1: height
+  %% #2: width
+  %% #3: channel
+  %% #4: unit
+  %% #5: color step
+  
+  \def\h{#1}
+  \def\w{#2}
+  \def\c{#3}
+  \def\unit{#4}
+  \pgfmathsetmacro\halfunit{0.5*\unit}
+  \pgfmathsetmacro\smallunit{0.3*\unit}
+
+  \inputTensorBreakDown{#1}{#2}{#3}{#4}{\firstCol}{#5}
+  \draw [thick, decorate, decoration = {calligraphic brace,amplitude=5pt}]
+  ($(inputEmbedreturn)+(\c*\halfunit,\c*\smallunit+\smallunit)$) --  ++(14*\unit+\w*\unit, 0)
+  node [pos=0.5, above, yshift=.5em] {$``wo"$};
+
+  \draw [thick, decorate, decoration = {calligraphic brace,amplitude=5pt, mirror}]
+  ($(inputEmbedreturn)+(-2.5*\unit,0)$) --  ++(0, -14*\unit-\w*\unit)
+  node [pos=0.5, left, xshift=-.5em] {$``ho"$};
+  
+  \coordinate (TL) at ($(TL)+(6,0)$);
+  \inputTensorBreakDown{#1}{#2}{#3}{#4}{\secondCol}{#5}
+  \coordinate (TL) at ($(TL)+(6,0)$);
+  \inputTensorBreakDown{#1}{#2}{#3}{#4}{\thirdCol}{#5}
+}
+
+\newcommand{\inputGemmB}[8]{
+  %% (TL): predefined points of the TL corner of the matrix
+  %% #1: height
+  %% #2: width
+  %% #3: channel
+  %% #4: n
+  %% #5: ho
+  %% #6: wo
+  %% #7: unit
+  %% #8: scale
+  \def\h{#1}
+  \def\w{#2}
+  \def\c{#3}
+  \def\n{#4}
+  \def\ho{#5}
+  \def\wo{#6}
+  \def\unit{#7}
+  \def\scale{#8}
+  \coordinate (inputGemmreturn) at (TL);
+  \pgfmathsetmacro\outArea{\ho*\wo}
+  \pgfmathsetmacro\lastStart{\n-\outArea}
+
+  \foreach \sec/\col/\lab in {0/\firstCol/0, \outArea/\secondCol/1, \lastStart/\thirdCol/{N-1}}{
+    \foreach \column [count=\co from 0] in {1,...,\outArea}{
+      \coordinate (TL) at ($(inputGemmreturn)+(\sec*\unit+\co*\unit, 0)$);
+      \fillColumn{#1}{#2}{#3}{#7}{\col}
+    }
+    \draw [thick, decorate, decoration = {calligraphic brace,amplitude=5pt*\scale}]
+    ($(inputGemmreturn)+(\sec*\unit,2*\unit)$) --  ++(\outArea*\unit, 0)
+    node [scale=1*\scale, pos=0.5, above, yshift=.5em] {$n=\lab$};
+  }
+
+  %% Draw horizontal lines in the gemm
+  \pgfmathsetmacro\rows{\h*\w*\c}
+  \foreach \row in {0,...,\rows}{
+    \draw [thick] ($(inputGemmreturn)+(0,-\row*\unit)$) -- ++(\n*\unit, 0);
+  }
+  \foreach \col in {\outArea,...,\lastStart} {
+    \draw [thick] ($(inputGemmreturn)+(\col*\unit, 0)$) -- ++(0,-\rows*\unit);
+  }
+
+  %% labels
+  \foreach \hoi [count=\i from 0] in {1,...,\ho}{
+    \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt*\scale}]
+    ($(inputGemmreturn)+(\i*\unit*\wo,0.1)$) --  ++(\wo*\unit, 0)
+    node [scale=.7*\scale, pos=0.5, above, yshift=.5em] {$ho=\i$};
+  }
+
+  \foreach \ch [count=\ci from 0] in {1,...,\c}{
+    \foreach \height [count=\yi from 0] in {1,...,\h}{
+      \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt*\scale}]
+      ($(inputGemmreturn)+(\n*\unit+.1, -\ci*\h*\w*\unit-\yi*\w*\unit)$) --  ++(0,-\w*\unit)
+      node [scale=.7*\scale, pos=0.5, right, xshift=.5em] {$y=\yi$};
+    }
+    \draw [thick, decorate, decoration = {calligraphic brace,amplitude=5pt*\scale}]
+    ($(inputGemmreturn)+(\n*\unit+.1+4*\unit, -\ci*\h*\w*\unit)$) --  ++(0,-\w*\h*\unit)
+    node [scale=.7*\scale, pos=0.5, right, xshift=.5em] {$c=\ci$};
+  }
+
+  \node [scale=1.5*\scale, rotate=90, above] (gemmK) at ($(inputGemmreturn)+(0, -0.5*\c*\h*\w*\unit)$)
+  {$``gemmK"$};
+  \draw [->, >=stealth, thick] (gemmK.north) -- ++(-2*\unit, 0)
+  node [above, scale=1.5*\scale, rotate=90] {Merge[$``c"$, $``y"$, $``x"$]};
+  \node [scale=1.5*\scale, below] (gemmN) at ($(inputGemmreturn)+(0.3*\n*\unit, -\c*\h*\w*\unit)$)
+  {$``gemmN"$};
+  \draw [->, >=stealth, thick] (gemmN.east) -- ++(2*\unit, 0)
+  node [right, scale=1.5*\scale] {Merge[$``n"$, $``ho"$, $``wo"$]};
+  
+  
+  %% restore TL
+  \coordinate (TL) at (inputGemmreturn);
+}
+
+\newcommand{\outputTensor}[6]{
+  %% (TL): predefined points of the TL corner of the first tensor
+  %% #1: height
+  %% #2: width
+  %% #3: channel
+  %% #4: unit
+  %% #5: scale
+  %% #6: step in color gradient
+  \def\h{#1}
+  \def\w{#2}
+  \def\c{#3}
+  \def\unit{#4}
+  \def\scale{#5}
+  \def\colorStep{#6}
+  
+  \coordinate (outputTensorreturn) at (TL);
+
+  %% First
+  \tensor{#1}{#2}{#3}{#4}
+  \colorTensor{#1}{#2}{#3}{#4}{\firstCol}{#6}
+  \node  [scale=1.5*\scale, left] at ($(TL)+(0, -0.5*\h*\unit)$) {$``ho"$};
+  \node  [scale=1.5*\scale, below] at ($(TL)+(0.5*\w*\unit, -\h*\unit)$) {$``wo"$};
+  \node  [scale=1.5*\scale, above left] at ($(TL)+(0.5*\c*0.5*\unit, 0.5*\c*0.3*\unit)$) {$``k"$};
+  \coordinate (backTL1) at (backTL);
+
+  %% Second
+  \coordinate (TL) at ($(TL)+(\w*\unit+0.5*\c*\unit+2*\unit,0)$);
+  \tensor{#1}{#2}{#3}{#4}
+  \colorTensor{#1}{#2}{#3}{#4}{\secondCol}{#6}
+  \coordinate (backTL2) at (backTL);
+
+  %% Third
+  \coordinate (TL) at ($(TL)+(\w*\unit+0.5*\c*\unit+6*\unit,0)$);
+  \tensor{#1}{#2}{#3}{#4}
+  \colorTensor{#1}{#2}{#3}{#4}{\thirdCol}{#6}
+  \node [scale=2] at ($(TL)+(-2*\unit,-0.5*\h*\unit)$) {$\cdots$};
+  \coordinate (backTR3) at (backTR);
+  %% Label dimension n
+  \draw [thick, decorate, decoration = {calligraphic brace,amplitude=5pt}]
+  ($(backTL1)+(0,0.3*\unit)$) --  ($(backTR3)+(0,0.3*\unit)$)
+  node [scale=1.5*\scale, pos=0.5, above, yshift=.5em] {$``n"$};
+}
+
+\newcommand{\outputGemmC}[7]{
+  %% (TL): predefined points of the TL corner of the matrix
+  %% #1: k
+  %% #2: n
+  %% #3: ho
+  %% #4: wo
+  %% #5: unit
+  %% #6: scale
+  %% #7: color step
+  \def\k{#1}
+  \def\n{#2}
+  \def\ho{#3}
+  \def\wo{#4}
+  \def\unit{#5}
+  \def\colorStep{#6}
+  \def\scale{#7}
+  
+
+  \coordinate (oGemmreturn) at (TL);
+  
+  \pgfmathsetmacro\outArea{\ho*\wo}
+  \pgfmathsetmacro\lastStart{\n-\outArea}
+  \pgfmathsetmacro\gap{\n-3*\outArea}
+
+  
+  \foreach \sec/\col/\lab in {0/\firstCol/0, \outArea/\secondCol/1, \lastStart/\thirdCol/{N-1}}{
+    \foreach \row [count=\ri from 0] in {1,...,\k}{
+      \pgfmathsetmacro\colorratio{100-\ri*\colorStep}
+      \def\thisCol{\col!\colorratio!white}
+      \coordinate (TL) at ($(oGemmreturn)+(\sec*\unit, -\ri*\unit)$);
+      \fillRec{\unit}{\outArea*\unit}{\thisCol}
+    }
+    \draw [thick, decorate, decoration = {calligraphic brace,amplitude=5pt*\scale}]
+    ($(oGemmreturn)+(\sec*\unit,2*\unit)$) --  ++(\outArea*\unit,0)
+    node [scale=1*\scale, pos=0.5, above, yshift=.5em] {$n=\lab$};
+  }
+  \foreach \hoi [count=\i from 0] in {1,...,\ho}{
+    \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt*\scale}]
+    ($(oGemmreturn)+(\i*\wo*\unit,0.1)$) --  ++(\wo*\unit,0)
+    node [scale=.7*\scale, pos=0.5, above, yshift=.5em] {$ho=\i$};
+  }
+  \foreach \row in {0,...,\k}{
+    \draw ($(oGemmreturn)+(0, -\row*\unit)$) -- ++(\n*\unit, 0);
+  }
+  \foreach \col in {0,...,\n}{
+    \draw ($(oGemmreturn)+(\col*\unit,0)$) -- ++(0,-\k*\unit);
+  }
+
+  \node [scale=1.5*\scale, rotate=-90, above] (gemmM) at ($(oGemmreturn)+(\n*\unit, -0.5*\k*\unit)$) {$``gemmM"$};
+  \draw [->, >=stealth, thick] (gemmM.north) -- ++(0.5*\scale, 0)
+  node [above, scale=1.5*\scale, rotate=-90] {PassThrough[$``k"$]};
+
+  \node [below, scale=1.5*\scale] (gemmN)  at ($(oGemmreturn)+(\n*\unit*0.3,-\k*\unit)$)
+  {$``gemmN"$};
+  \draw [->, >=stealth, thick] (gemmN.east) -- ++(0.5*\scale,0)
+  node [right, scale=1.5*\scale] {Merge[$``n"$,$``ho"$,$``wo"$]};
+
+  %% restore TL
+  \coordinate (TL) at (oGemmreturn);
+}
 
 
 %%% Local Variables:

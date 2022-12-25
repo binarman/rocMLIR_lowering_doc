@@ -14,29 +14,31 @@
     \def\firstCol{red}
     \def\secondCol{gray}
     \def\thirdCol{brown}
-    \def\unitTensor{0.5}
-    \def\unitMatrix{0.4}
+    \def\unitTensor{0.3}
     \coordinate (TL) at (0,0);
-    \filterTensor{3}{3}{3}{0.5}
+    \filterTensor{3}{3}{3}{\unitTensor}{30}
     \coordinate (TL) at (secondTL);
     \pickElemInTensor{\unitTensor}
-    
-    \coordinate (TL) at (0, -4);
-    \filterGemm{3}{3}{3}{10}{\unitMatrix}
-    \pickElemInMatrix{1}{20}{\unitMatrix}
-%
-    \coordinate (TL) at (-6,0);
-    \filterTransform
-    %\coordinate (BL) at (0,0);
-    %\coordinate (TL) at (0,0);
-    % \fillTopParallelogram{0.15}{0.5}{0.25}{red}
-    %\colorTensor{3}{3}{3}{.5}{red}
-    %\coordinate (BL) at ($(BL)+(1.5,-0.5)$);
-    %\fillSideParallelogram{0.5}{0.25}{0.15}{yellow}
-    %\fillRec{0.5}{0.5}{blue}
   \end{tikzpicture}
-  \caption{Coordinate transformation of filter tensor $\{``k",``c",``y",``x"\}$}
+  \caption{Filter tensor $F\{``k",``c",``y",``x"\}$}
   \label{fig:filter_tensor}
+\end{figure}
+
+%\tikzexternaldisable
+\tikzsetnextfilename{filter_matrix_A}
+\begin{figure}[!h]
+  \centering
+  \begin{tikzpicture}
+    \def\firstCol{red}
+    \def\secondCol{gray}
+    \def\thirdCol{brown}
+    \def\unitMatrix{0.25}
+    \coordinate (TL) at (0,0);
+    \filterGemmA{3}{3}{3}{10}{\unitMatrix}{1}
+    \pickElemInMatrix{1}{20}{\unitMatrix}
+  \end{tikzpicture}
+  \caption{Filter matrix $A\{``gemmM",``gemmK"\}$}
+  \label{fig:filter_matrix_A}
 \end{figure}
 
 In implicit gemm, tensors are converted to matrices and convolution
@@ -63,8 +65,8 @@ During this process, we also understand what a transform is.
 \Fig \ref{fig:filter_tensor} shows the coordinate transformation of the filter tensor
 in a forward convolution context.
 
-\tikzexternaldisable
-%\tikzsetnextfilename{input_tensor}
+%\tikzexternaldisable
+\tikzsetnextfilename{input_tensor}
 \begin{figure}[!h]
   \centering
   \begin{tikzpicture}
@@ -72,36 +74,226 @@ in a forward convolution context.
     \def\secondCol{blue!50!gray}
     \def\thirdCol{orange}
     \coordinate (TL) at (0,0);
-    \inputTensor{8}{8}{3}{0.3}{$``hi"$}{$``wi"$}
+    \inputTensor{8}{8}{3}{0.3}{$``hi"$}{$``wi"$}{30}
+  \end{tikzpicture}
+  \caption{Input tensor $X\{``n",``c",``hi",``wi"\}$}
+  \label{fig:input_tensor}
+\end{figure}
 
-    \draw [->,>=stealth, ultra thick] ($(TL)+(5,-3)$) -- ++(0, -2)
-    node [right, scale=1.5, pos=0.5] {Pad\{1,1,1,1\}[$``hi"$, $``wi"$]};
-    
-    
+%\tikzexternaldisable
+\tikzsetnextfilename{input_pad_tensor}
+\begin{figure}[!h]
+  \centering
+  \begin{tikzpicture}
     \def\firstCol{purple!60!white}
     \def\secondCol{blue!50!gray!60!white}
     \def\thirdCol{orange!60!white}
-    \coordinate (TL) at (-1, -6);
-    \inputTensor{10}{10}{3}{0.3}{$``hipad"$}{$``wipad"$}
+    \coordinate (PadTL) at (0,0);
+    \coordinate (TL) at (PadTL);
+    \inputTensor{10}{10}{3}{0.3}{$``hipad"$}{$``wipad"$}{30}
     \inputTensorPad{8}{8}{0.3}
-
-    \coordinate (TL) at ($(TL)+(-1, -6)$);
-    
-
-    
-    %\filterGemm{3}{3}{3}{10}{0.4}
-    %\pickElem{1}{12}{0.4}
-    %\coordinate (BL) at (0,0);
-    %\coordinate (TL) at (0,0);
-    % \fillTopParallelogram{0.15}{0.5}{0.25}{red}
-    %\colorTensor{3}{3}{3}{.5}{red}
-    %\coordinate (BL) at ($(BL)+(1.5,-0.5)$);
-    %\fillSideParallelogram{0.5}{0.25}{0.15}{yellow}
-    %\fillRec{0.5}{0.5}{blue}
   \end{tikzpicture}
-  \caption{Coordinate transformation of input tensor $\{``n",``c",``hi",``wi"\}$}
-  \label{fig:input_tensor}
+  \caption{Input tensor after padding $\text{Pad}\{1,1,1,1\}[``hipad",``wipad"] \leftarrow [``hi",``wi"]$}
+  \label{fig:input_pad_tensor}
 \end{figure}
+
+\tikzsetnextfilename{input_embed_tensor}
+\begin{figure}[!h]
+  \centering
+  \begin{tikzpicture}
+    \def\firstCol{purple}
+    \def\secondCol{blue!50!gray}
+    \def\thirdCol{orange}
+    \coordinate (EmbedTL) at (0,0);
+    \coordinate (TL) at (EmbedTL);
+    \inputTensorAfterEmbed{3}{3}{3}{0.25}{30}
+  \end{tikzpicture}
+  \caption{Input tensor after embedding Embed\{strideH, dilationH\}[$``ho"$,$``y"$] $\leftarrow$ [$``hipad"$] and Embed\{strideW, dilationW\}[$``wo"$,$``x"$] $\leftarrow$ [$``wipad"$]}
+  \label{fig:input_embed_tensor}
+\end{figure}
+
+%\tikzexternaldisable
+\tikzsetnextfilename{input_matrix_B}
+\begin{figure}[!h]
+  \centering
+  \begin{tikzpicture}
+    \def\firstCol{purple}
+    \def\secondCol{blue!50!gray}
+    \def\thirdCol{orange}
+    \coordinate (inputGemmTL) at (0,0);
+    \coordinate (TL) at (inputGemmTL);
+    \inputGemmB{3}{3}{3}{60}{4}{4}{0.25}{1}
+  \end{tikzpicture}
+  \caption{Input matrix $B\{``gemmK",``gemmN"\}$}
+  \label{fig:input_matrix_B}
+\end{figure}
+
+%\tikzexternaldisable
+\tikzsetnextfilename{output_tensor}
+\begin{figure}[!h]
+  \centering
+  \begin{tikzpicture}
+    \def\firstCol{magenta}
+    \def\secondCol{teal!50!gray}
+    \def\thirdCol{olive}
+    \def\unitTensor{0.3}
+    \coordinate (outputTensorTL) at (0,0);
+    \coordinate (TL) at (outputTensorTL);
+    \outputTensor{4}{4}{10}{\unitTensor}{1}{10}
+  \end{tikzpicture}
+  \caption{Output tensor $O\{``n",``k", ``ho", ``wo"\}$}
+  \label{fig:output_tensor}
+\end{figure}
+
+%\tikzexternaldisable
+\tikzsetnextfilename{output_matrix_C}
+\begin{figure}[!h]
+  \centering
+  \begin{tikzpicture}[scale=.9]
+    \def\firstCol{magenta}
+    \def\secondCol{teal!50!gray}
+    \def\thirdCol{olive}
+    \def\unitMatrix{0.3}
+    \coordinate (outputMatrixTL) at (0,0);
+    \coordinate (TL) at (outputMatrixTL);
+    \outputGemmC{10}{60}{4}{4}{\unitMatrix}{10}{.9}
+  \end{tikzpicture}
+  \caption{Output matrix $C\{``gemmM",``gemmN"\}$}
+  \label{fig:output_matrix_C}
+\end{figure}
+
+%\tikzexternaldisable
+\tikzsetnextfilename{conv2d}
+\begin{figure}[!h]
+  \centering
+  \begin{tikzpicture}
+    \def\unitTensor{0.3}
+
+    \def\firstInputCol{purple}
+    \def\secondInputCol{blue!50!gray}
+    \def\thirdInputCol{orange}
+    
+    %% input tensor
+    \def\firstCol{\firstInputCol}
+    \def\secondCol{\secondInputCol}
+    \def\thirdCol{\thirdInputCol}
+    \coordinate (TL) at (0,0);
+    \inputTensor{8}{8}{3}{\unitTensor}{$``hi"$}{$``wi"$}{30}
+
+    
+    %% filter tensor
+    \def\firstCol{red}
+    \def\secondCol{gray}
+    \def\thirdCol{brown}
+    \coordinate (filterTensorTL) at (-3,-6);
+
+    \coordinate (TL) at ($(filterTensorTL)+(6,0)$);
+    \filterTensor{3}{3}{3}{\unitTensor}{30}
+
+    \draw [ultra thick, \firstInputCol, ->,>=stealth] ($(firstBR)+(0,-.5)$) -- (labelK.west) node [above, pos=.5, sloped, scale=1.2, black] {conv};
+    \draw [ultra thick, \secondInputCol, ->,>=stealth] ($(secondmidB)+(0,-.5)$) -- (labelK.north) node [above, pos=.5, sloped, scale=1.2, black] {conv};
+    \draw [ultra thick, \thirdInputCol, ->,>=stealth] ($(thirdBL)+(0,-.5)$) -- (labelK.east) node [above, pos=.5, sloped, scale=1.2, black] {conv};
+
+    %% output tensor
+    \def\firstCol{magenta}
+    \def\secondCol{teal!50!gray}
+    \def\thirdCol{olive}
+    \def\unitTensor{0.3}
+    \coordinate (outputTensorTL) at (0, -10);
+    \coordinate (TL) at (outputTensorTL);
+    \outputTensor{4}{4}{10}{\unitTensor}{1}{10}
+
+    \draw [ultra thick, ->, >=stealth, \firstInputCol] ($(midB.south)+(0,-.2)$) --
+    ($(backTL1)+(.5,.2)$);
+    \draw [ultra thick, ->, >=stealth, \secondInputCol] ($(midB.south)+(.4,-.2)$) --
+    ($(backTL2)+(.5,.2)$);
+    \draw [ultra thick, ->, >=stealth, \thirdInputCol] ($(midB.south)+(.8,-.2)$) --
+    ($(backTR3)+(-.5,.2)$);
+    
+  \end{tikzpicture}
+  \caption{Forward Convolution}
+  \label{fig:Conv}
+\end{figure}
+
+%\tikzexternaldisable
+\tikzsetnextfilename{conv2d_gemm}
+\begin{figure}[!h]
+  \centering
+  \begin{tikzpicture}[scale=.7]
+    %% filter matrix
+    \def\firstCol{red}
+    \def\secondCol{gray}
+    \def\thirdCol{brown}
+    \def\unitMatrix{0.25}
+    \coordinate (TL) at (0,0);
+    \filterGemmA{3}{3}{3}{10}{\unitMatrix}{.7}
+    %\pickElemInMatrix{1}{20}{\unitMatrix}
+
+    %% input matrix
+    \def\firstCol{purple}
+    \def\secondCol{blue!50!gray}
+    \def\thirdCol{orange}
+    \coordinate (inputGemmTL) at (8.5,9);
+    \coordinate (TL) at (inputGemmTL);
+    \inputGemmB{3}{3}{3}{60}{4}{4}{\unitMatrix}{.7}
+
+    %% output matrix
+    \def\firstCol{magenta}
+    \def\secondCol{teal!50!gray}
+    \def\thirdCol{olive}
+    \coordinate (outputGemm) at (8.5,0);
+    \coordinate (TL) at (outputGemm);
+    \outputGemmC{10}{60}{4}{4}{\unitMatrix}{10}{.7}
+  \end{tikzpicture}
+  \caption{GEMM for conv2d}
+  \label{fig:conv2d_GEMM}
+\end{figure}
+
+%\tikzexternaldisable
+%\tikzsetnextfilename{input_tensor}
+% \begin{figure}[!h]
+%   \centering
+%   \begin{tikzpicture}
+%     \def\firstCol{purple}
+%     \def\secondCol{blue!50!gray}
+%     \def\thirdCol{orange}
+%     \coordinate (TL) at (0,0);
+%     \coordinate (origTL) at (TL);
+%     \inputTensor{8}{8}{3}{0.3}{$``hi"$}{$``wi"$}
+
+%     \draw [->,>=stealth, ultra thick] ($(TL)+(5,-2.5)$) -- ++(0, -1)
+%     node [right, scale=1.5, pos=0.5] {Pad\{1,1,1,1\}[$``hi"$, $``wi"$]};
+    
+    
+%     \def\firstCol{purple!60!white}
+%     \def\secondCol{blue!50!gray!60!white}
+%     \def\thirdCol{orange!60!white}
+%     \coordinate (PadTL) at ($(origTL)+(-1,-4.5)$);
+%     \coordinate (TL) at (PadTL);
+%     \inputTensor{10}{10}{3}{0.3}{$``hipad"$}{$``wipad"$}
+%     \inputTensorPad{8}{8}{0.3}
+
+
+%     \draw [->,>=stealth, ultra thick] ($(origTL)+(5,-8)$) -- ++(0, -1)
+%     node [right, scale=1.5, pos=0.5] {Embed\{1,1\}[$``hipad"$]\{1,1\}[$``wipad"$]};
+    
+    
+%     \def\firstCol{purple}
+%     \def\secondCol{blue!50!gray}
+%     \def\thirdCol{orange}
+%     \coordinate (EmbedTL) at ($(PadTL)+(-2, -5)$);
+%     \coordinate (TL) at (EmbedTL);
+%     \inputTensorAfterEmbed{3}{3}{3}{0.25}
+
+%     \coordinate (inputGemmTL) at ($(EmbedTL)+(1, -6)$);
+%     \coordinate (TL) at (inputGemmTL);
+%     \inputGemmB{3}{3}{3}{60}{4}{4}{0.25}
+
+%     %% The inputGemm
+%   \end{tikzpicture}
+%   \caption{Coordinate transformation of input tensor $\{``n",``c",``hi",``wi"\}$}
+%   \label{fig:input_tensor}
+% \end{figure}
 
 
 \end{document}

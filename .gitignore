@@ -1,0 +1,6 @@
+auto/
+tikz_figures/
+*.auxlock
+*.aux
+*.log
+main.pdf
