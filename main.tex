@@ -177,7 +177,8 @@ in a forward convolution context.
     \def\firstCol{\firstInputCol}
     \def\secondCol{\secondInputCol}
     \def\thirdCol{\thirdInputCol}
-    \coordinate (TL) at (0,0);
+    \coordinate (inputTensorTL) at (0,0);
+    \coordinate (TL) at (inputTensorTL);
     \inputTensor{8}{8}{3}{\unitTensor}{$``hi"$}{$``wi"$}{30}
 
     
@@ -185,9 +186,8 @@ in a forward convolution context.
     \def\firstCol{red}
     \def\secondCol{gray}
     \def\thirdCol{brown}
-    \coordinate (filterTensorTL) at (-3,-6);
-
-    \coordinate (TL) at ($(filterTensorTL)+(6,0)$);
+    \coordinate (filterTensorTL) at (3,-6);
+    \coordinate (TL) at (filterTensorTL);
     \filterTensor{3}{3}{3}{\unitTensor}{30}
 
     \draw [ultra thick, \firstInputCol, ->,>=stealth] ($(firstBR)+(0,-.5)$) -- (labelK.west) node [above, pos=.5, sloped, scale=1.2, black] {conv};
@@ -209,14 +209,19 @@ in a forward convolution context.
     ($(backTL2)+(.5,.2)$);
     \draw [ultra thick, ->, >=stealth, \thirdInputCol] ($(midB.south)+(.8,-.2)$) --
     ($(backTR3)+(-.5,.2)$);
+
+    %% Adding labels
+    \node [scale=1.5, below left] at ($(inputTensorTL)+(-1.5,0)$) {Input Tensor};
+    \node [scale=1.5, below left] at ($(filterTensorTL)+(-1.5,0)$) {Filter Tensor};
+    \node [scale=1.5, below left] at ($(outputTensorTL)+(-1.5,0)$) {Output Tensor};
     
   \end{tikzpicture}
   \caption{Forward Convolution}
   \label{fig:Conv}
 \end{figure}
 
-%\tikzexternaldisable
-\tikzsetnextfilename{conv2d_gemm}
+\tikzexternaldisable
+%\tikzsetnextfilename{conv2d_gemm}
 \begin{figure}[!h]
   \centering
   \begin{tikzpicture}[scale=.7]
@@ -225,7 +230,8 @@ in a forward convolution context.
     \def\secondCol{gray}
     \def\thirdCol{brown}
     \def\unitMatrix{0.25}
-    \coordinate (TL) at (0,0);
+    \coordinate (filterGemmTL) at (0,0);
+    \coordinate (TL) at (filterGemmTL);
     \filterGemmA{3}{3}{3}{10}{\unitMatrix}{.7}
     %\pickElemInMatrix{1}{20}{\unitMatrix}
 
@@ -241,9 +247,14 @@ in a forward convolution context.
     \def\firstCol{magenta}
     \def\secondCol{teal!50!gray}
     \def\thirdCol{olive}
-    \coordinate (outputGemm) at (8.5,0);
-    \coordinate (TL) at (outputGemm);
+    \coordinate (outputGemmTL) at (8.5,0);
+    \coordinate (TL) at (outputGemmTL);
     \outputGemmC{10}{60}{4}{4}{\unitMatrix}{10}{.7}
+
+    %% labels
+    \node [scale=1.5,right] at ($(filterGemmTL)+(0,-4)$) {Filter Matrix A};
+    \node [scale=1.5,right] at ($(inputGemmTL)+(0,1.5)$) {Input Matrix B};
+    \node [scale=1.5,right] at ($(outputGemmTL)+(0,-4)$) {Output Matrix C};
   \end{tikzpicture}
   \caption{GEMM for conv2d}
   \label{fig:conv2d_GEMM}
