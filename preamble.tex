@@ -890,12 +890,11 @@
   %% Labels
   %% gemmM
   \coordinate (TL) at (fillGemmreturn);
-  \node [right, scale=0.7*\scale] at ($(TL)+(\colums*\unit,-0.5*\unit)$) {$k=0$};
-  \node [right, scale=0.7*\scale] at ($(TL)+(\colums*\unit,-1.5*\unit)$) {$k=1$};
-  \node [right, scale=0.7*\scale] at ($(TL)+(\colums*\unit,-\k*\unit+.5*\unit)$) {$k=K-1$};
-  \node [scale=1.5*\scale, rotate=90, above] (gemmM) at ($(TL)+(0, -0.5*\k*\unit)$) {$``gemmM"$};
-  \draw [->, >=stealth, thick] (gemmM.north) -- ++(-0.5*\scale, 0)
-  node [above, scale=1.5*\scale, rotate=90] {PassThrough[$``k"$]};
+  %% Do we want to show k=???
+  %\node [right, scale=0.7*\scale] at ($(TL)+(\colums*\unit,-0.5*\unit)$) {$k=0$};
+  %\node [right, scale=0.7*\scale] at ($(TL)+(\colums*\unit,-1.5*\unit)$) {$k=1$};
+  %\node [right, scale=0.7*\scale] at ($(TL)+(\colums*\unit,-\k*\unit+.5*\unit)$) {$k=K-1$};
+  
   %% gemmK
   \node [below, scale=1.5*\scale] (gemmK)  at ($(TL)+(\c*\h*\w*\unit*0.1,-\k*\unit)$)
   {$``gemmK"$};
@@ -916,6 +915,32 @@
   
   %% restore TL
   \coordinate (TL) at (fillGemmreturn);
+}
+
+\newcommand{\filterGemmC}[6]{
+  %% (TL): predefined points of the TL corner of the matrix
+  %% #1: height
+  %% #2: width
+  %% #3: channel
+  %% #4: k
+  %% #5: unit
+  %% #6: scale
+  \def\h{#1}
+  \def\w{#2}
+  \def\c{#3}
+  \def\k{#4}
+  \def\unit{#5}
+  \def\scale{#6}
+
+  \filterGemmA{#1}{#2}{#3}{#4}{#5}{#6}
+  %% rewrite gemmK --> gemmN
+  %% gemmN
+  \node [below, scale=1.5*\scale,fill=white]  at ($(TL)+(\c*\h*\w*\unit*0.1,-\k*\unit)$)
+  {$``gemmN"$};
+  %% gemmM
+  \node [scale=1.5*\scale, rotate=-90, above] (gemmM) at ($(TL)+(\h*\w*\c*\unit, -0.5*\k*\unit)$) {$``gemmM"$};
+  \draw [->, >=stealth, thick] (gemmM.north) -- ++(0.5*\scale, 0)
+  node [above, scale=1.5*\scale, rotate=-90] {PassThrough[$``k"$]};
 }
 
 \newcommand{\pickElemInMatrix}[3]{
@@ -1177,6 +1202,79 @@
   \coordinate (TL) at (inputGemmreturn);
 }
 
+\newcommand{\inputGemmBBwdWeight}[8]{
+  %% (TL): predefined points of the TL corner of the matrix
+  %% #1: height
+  %% #2: width
+  %% #3: channel
+  %% #4: n
+  %% #5: ho
+  %% #6: wo
+  %% #7: unit
+  %% #8: scale
+  \def\h{#1}
+  \def\w{#2}
+  \def\c{#3}
+  \def\n{#4}
+  \def\ho{#5}
+  \def\wo{#6}
+  \def\unit{#7}
+  \def\scale{#8}
+  \coordinate (inputGemmreturn) at (TL);
+  \pgfmathsetmacro\outArea{\ho*\wo}
+  \pgfmathsetmacro\lastStart{\n-\outArea}
+
+  \foreach \sec/\col/\lab in {0/\firstCol/0, \outArea/\secondCol/1, \lastStart/\thirdCol/{N-1}}{
+    \foreach \rowInSec [count=\ro from 0] in {1,...,\outArea}{
+      \coordinate (TL) at ($(inputGemmreturn)+(0,-\sec*\unit-\ro*\unit)$);
+      \fillRow{#1}{#2}{#3}{#7}{\col}
+    }
+    \draw [thick, decorate, decoration = {calligraphic brace,amplitude=5pt*\scale}]
+    ($(inputGemmreturn)+(\h*\w*\c*\unit+4*\unit,-\sec*\unit)$) --  ++(0,-\outArea*\unit)
+    node [scale=1*\scale, pos=0.5, right, xshift=.5em] {$n=\lab$};
+  }
+
+  %% Draw horizontal lines in the gemm
+  \pgfmathsetmacro\rows{\h*\w*\c}
+  \foreach \col in {0,...,\rows}{
+    \draw [thick] ($(inputGemmreturn)+(\col*\unit,0)$) -- ++(0, -\n*\unit);
+  }
+  \foreach \col in {\outArea,...,\lastStart} {
+    \draw [thick] ($(inputGemmreturn)+(0,-\col*\unit)$) -- ++(\rows*\unit, 0);
+  }
+
+  %% labels
+  \foreach \hoi [count=\i from 0] in {1,...,\ho}{
+    \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt*\scale}]
+    ($(inputGemmreturn)+(\rows*\unit+.1,-\i*\unit*\wo)$) --  ++(0, -\wo*\unit)
+    node [scale=.7*\scale, pos=0.5, right, xshift=.5em] {$ho=\i$};
+  }
+
+  \foreach \ch [count=\ci from 0] in {1,...,\c}{
+    \foreach \height [count=\yi from 0] in {1,...,\h}{
+      \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt*\scale}]
+      ($(inputGemmreturn)+(\ci*\h*\w*\unit+\yi*\w*\unit, .1)$) --  ++(\w*\unit,0)
+      node [scale=.7*\scale, pos=0.5, above, yshift=.5em] {$y=\yi$};
+    }
+    \draw [thick, decorate, decoration = {calligraphic brace,amplitude=5pt*\scale}]
+    ($(inputGemmreturn)+(\ci*\h*\w*\unit, 4*\unit)$) --  ++(\w*\h*\unit,0)
+    node [scale=.7*\scale, pos=0.5, above, yshift=.5em] {$c=\ci$};
+  }
+
+  \node [scale=1.5*\scale, rotate=90, above] (gemmK) at ($(inputGemmreturn)+(0, -0.5*\n*\unit)$)
+  {$``gemmK"$};
+  \draw [->, >=stealth, thick] (gemmK.north) -- ++(-2*\unit, 0)
+  node [above, scale=1.5*\scale, rotate=90] {Merge[$``n"$, $``ho"$, $``wo"$]};
+  \node [scale=1.5*\scale, below] (gemmN) at ($(inputGemmreturn)+(0.3*\rows*\unit, -\n*\unit)$)
+  {$``gemmN"$};
+  \draw [->, >=stealth, thick] (gemmN.east) -- ++(2*\unit, 0)
+  node [right, scale=1.5*\scale] {Merge[$``c"$, $``y"$, $``x"$]};
+  
+  
+  %% restore TL
+  \coordinate (TL) at (inputGemmreturn);
+}
+
 \newcommand{\outputTensor}[6]{
   %% (TL): predefined points of the TL corner of the first tensor
   %% #1: height
@@ -1275,6 +1373,67 @@
   \node [below, scale=1.5*\scale] (gemmN)  at ($(oGemmreturn)+(\n*\unit*0.3,-\k*\unit)$)
   {$``gemmN"$};
   \draw [->, >=stealth, thick] (gemmN.east) -- ++(0.5*\scale,0)
+  node [right, scale=1.5*\scale] {Merge[$``n"$,$``ho"$,$``wo"$]};
+
+  %% restore TL
+  \coordinate (TL) at (oGemmreturn);
+}
+
+\newcommand{\outputGemmA}[7]{
+  %% (TL): predefined points of the TL corner of the matrix
+  %% #1: k
+  %% #2: n
+  %% #3: ho
+  %% #4: wo
+  %% #5: unit
+  %% #6: scale
+  %% #7: color step
+  \def\k{#1}
+  \def\n{#2}
+  \def\ho{#3}
+  \def\wo{#4}
+  \def\unit{#5}
+  \def\colorStep{#6}
+  \def\scale{#7}
+  
+
+  \coordinate (oGemmreturn) at (TL);
+  
+  \pgfmathsetmacro\outArea{\ho*\wo}
+  \pgfmathsetmacro\lastStart{\n-\outArea}
+  \pgfmathsetmacro\gap{\n-3*\outArea}
+
+  
+  \foreach \sec/\col/\lab in {0/\firstCol/0, \outArea/\secondCol/1, \lastStart/\thirdCol/{N-1}}{
+    \foreach \row [count=\ri from 0] in {1,...,\k}{
+      \pgfmathsetmacro\colorratio{100-\ri*\colorStep}
+      \def\thisCol{\col!\colorratio!white}
+      \coordinate (TL) at ($(oGemmreturn)+(\sec*\unit, -\ri*\unit)$);
+      \fillRec{\unit}{\outArea*\unit}{\thisCol}
+    }
+    \draw [thick, decorate, decoration = {calligraphic brace,amplitude=5pt*\scale}]
+    ($(oGemmreturn)+(\sec*\unit,2*\unit)$) --  ++(\outArea*\unit,0)
+    node [scale=1*\scale, pos=0.5, above, yshift=.5em] {$n=\lab$};
+  }
+  \foreach \hoi [count=\i from 0] in {1,...,\ho}{
+    \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt*\scale}]
+    ($(oGemmreturn)+(\i*\wo*\unit,0.1)$) --  ++(\wo*\unit,0)
+    node [scale=.7*\scale, pos=0.5, above, yshift=.5em] {$ho=\i$};
+  }
+  \foreach \row in {0,...,\k}{
+    \draw ($(oGemmreturn)+(0, -\row*\unit)$) -- ++(\n*\unit, 0);
+  }
+  \foreach \col in {0,...,\n}{
+    \draw ($(oGemmreturn)+(\col*\unit,0)$) -- ++(0,-\k*\unit);
+  }
+
+  \node [scale=1.5*\scale, rotate=90, above] (gemmM) at ($(oGemmreturn)+(0, -0.5*\k*\unit)$) {$``gemmM"$};
+  \draw [->, >=stealth, thick] (gemmM.north) -- ++(-0.5*\scale, 0)
+  node [above, scale=1.5*\scale, rotate=90] {PassThrough[$``k"$]};
+
+  \node [below, scale=1.5*\scale] (gemmK)  at ($(oGemmreturn)+(\n*\unit*0.3,-\k*\unit)$)
+  {$``gemmK"$};
+  \draw [->, >=stealth, thick] (gemmK.east) -- ++(0.5*\scale,0)
   node [right, scale=1.5*\scale] {Merge[$``n"$,$``ho"$,$``wo"$]};
 
   %% restore TL

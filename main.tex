@@ -220,8 +220,8 @@ in a forward convolution context.
   \label{fig:Conv}
 \end{figure}
 
-\tikzexternaldisable
-%\tikzsetnextfilename{conv2d_gemm}
+%\tikzexternaldisable
+\tikzsetnextfilename{conv2d_gemm}
 \begin{figure}[!h]
   \centering
   \begin{tikzpicture}[scale=.7]
@@ -258,6 +258,95 @@ in a forward convolution context.
   \end{tikzpicture}
   \caption{GEMM for conv2d}
   \label{fig:conv2d_GEMM}
+\end{figure}
+
+%\tikzexternaldisable
+\tikzsetnextfilename{output_matrix_A_conv2d_bwd_weight}
+\begin{figure}[!h]
+  \centering
+  \begin{tikzpicture}[scale=.9]
+    \def\firstCol{magenta}
+    \def\secondCol{teal!50!gray}
+    \def\thirdCol{olive}
+    \def\unitMatrix{0.3}
+    \coordinate (outputMatrixTL) at (0,0);
+    \coordinate (TL) at (outputMatrixTL);
+    \outputGemmA{10}{60}{4}{4}{\unitMatrix}{10}{.9}
+  \end{tikzpicture}
+  \caption{Output matrix $A\{``gemmM",``gemmK"\}$ for conv2d\_bwd\_weight}
+  \label{fig:output_matrix_A_conv2d_bwd_weight}
+\end{figure}
+
+%\tikzexternaldisable
+\tikzsetnextfilename{input_matrix_B_conv2d_bwd_weight}
+\begin{figure}[!h]
+  \centering
+  \begin{tikzpicture}
+    \def\firstCol{purple}
+    \def\secondCol{blue!50!gray}
+    \def\thirdCol{orange}
+    \coordinate (inputGemmTL) at (0,0);
+    \coordinate (TL) at (inputGemmTL);
+    \inputGemmBBwdWeight{3}{3}{3}{60}{4}{4}{0.25}{1}
+  \end{tikzpicture}
+  \caption{Input matrix $B\{``gemmK",``gemmN"\}$ for conv2d\_bwd\_weight}
+  \label{fig:input_matrix_B_con2d_bwd_weight}
+\end{figure}
+
+%\tikzexternaldisable
+\tikzsetnextfilename{filter_matrix_C}
+\begin{figure}[!h]
+  \centering
+  \begin{tikzpicture}
+    \def\firstCol{red}
+    \def\secondCol{gray}
+    \def\thirdCol{brown}
+    \def\unitMatrix{0.25}
+    \coordinate (TL) at (0,0);
+    \filterGemmC{3}{3}{3}{10}{\unitMatrix}{1}
+    %\pickElemInMatrix{1}{20}{\unitMatrix}
+  \end{tikzpicture}
+  \caption{Filter matrix $C\{``gemmM",``gemmN"\}$}
+  \label{fig:filter_matrix_C}
+\end{figure}
+
+%\tikzexternaldisable
+\tikzsetnextfilename{conv2d_bwd_weight_gemm}
+\begin{figure}[!h]
+  \centering
+  \begin{tikzpicture}[scale=.7]
+    %% output matrix
+    \def\firstCol{magenta}
+    \def\secondCol{teal!50!gray}
+    \def\thirdCol{olive}
+    \def\unitMatrix{0.25}
+    \coordinate (outputGemmTL) at (0,0);
+    \coordinate (TL) at (outputGemmTL);
+    \outputGemmA{10}{60}{4}{4}{\unitMatrix}{10}{.7}
+
+    %% Input matrix
+    \def\firstCol{purple}
+    \def\secondCol{blue!50!gray}
+    \def\thirdCol{orange}
+    \coordinate (inputGemmTL) at (16,17);
+    \coordinate (TL) at (inputGemmTL);
+    \inputGemmBBwdWeight{3}{3}{3}{60}{4}{4}{\unitMatrix}{.7}
+
+    %% Filter matrix
+    \def\firstCol{red}
+    \def\secondCol{gray}
+    \def\thirdCol{brown}
+    \coordinate (filterGemmTL) at (16,0);
+    \coordinate (TL) at (filterGemmTL);
+    \filterGemmC{3}{3}{3}{10}{\unitMatrix}{.7}
+
+    %% labels
+    \node [scale=1.5,right] at ($(outputGemmTL)+(0,-4)$) {Output Matrix A};
+    \node [scale=1.5,left] at ($(inputGemmTL)+(0,-2)$) {Input Matrix B};
+    \node [scale=1.5,right] at ($(filterGemmTL)+(0,-4)$) {Filter Matrix C};
+  \end{tikzpicture}
+  \caption{GEMM for conv2d\_bwd\_weight}
+  \label{fig:conv2d_bwd_weiggt_gemm}
 \end{figure}
 
 %\tikzexternaldisable
