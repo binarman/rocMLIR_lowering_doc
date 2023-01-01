@@ -779,9 +779,9 @@
   %% Draw first filer/kernel and dimension names
   \tensor{#1}{#2}{#3}{#4}
   \colorTensor{#1}{#2}{#3}{#4}{\firstCol}{#5}
-  \node  [scale=1.5, left] at ($(TL)+(0, -0.5*\h*\unit)$) {$``y"$};
-  \node  [scale=1.5, below] at ($(TL)+(0.5*\w*\unit, -\h*\unit)$) {$``x"$};
-  \node  [scale=1.5, above left] at ($(TL)+(0.5*\c*0.5*\unit, 0.5*\c*0.3*\unit)$) {$``c"$};
+  \node  [scale=1.5, left] at ($(TL)+(0, -0.5*\h*\unit)$) {y};
+  \node  [scale=1.5, below] at ($(TL)+(0.5*\w*\unit, -\h*\unit)$) {x};
+  \node  [scale=1.5, above] at (TL) {c};
   \coordinate (backTL1) at (backTL);
   %% Draw second filter/kernel
   \coordinate (TL) at ($(TL)+(\w*\unit+0.5*\c*\unit+.6*\unit,0)$);
@@ -798,7 +798,7 @@
   %% Label dimension k
   \draw [thick, decorate, decoration = {calligraphic brace,amplitude=5pt}]
   ($(backTL1)+(0,0.3*\unit)$) --  ($(backTR3)+(0,0.3*\unit)$)
-  node [scale=1.5, pos=0.5, above, yshift=.5em] (labelK) {$``k"$};
+  node [scale=1.5, pos=0.5, above] (labelK) {k};
 
   %% restore TL
   \coordinate (TL) at (filterTensorreturn);
@@ -888,7 +888,6 @@
   }
 
   %% Labels
-  %% gemmM
   \coordinate (TL) at (fillGemmreturn);
   %% Do we want to show k=???
   %\node [right, scale=0.7*\scale] at ($(TL)+(\colums*\unit,-0.5*\unit)$) {$k=0$};
@@ -896,10 +895,16 @@
   %\node [right, scale=0.7*\scale] at ($(TL)+(\colums*\unit,-\k*\unit+.5*\unit)$) {$k=K-1$};
   
   %% gemmK
-  \node [below, scale=1.5*\scale] (gemmK)  at ($(TL)+(\c*\h*\w*\unit*0.1,-\k*\unit)$)
-  {$``gemmK"$};
+  \node [below, scale=1.5*\scale] (gemmK)  at ($(TL)+(\c*\h*\w*\unit*0.2,-\k*\unit)$)
+  {gemmK};
   \draw [->, >=stealth, thick] (gemmK.east) -- ++(0.5*\scale, 0)
-  node [right, scale=1.5*\scale] {Merge[$``c"$,$``y"$,$``x"$]};
+  node [right, scale=1.5*\scale] {\textbf{Merge}[c,y,x]};
+  %% gemmM
+  %% The following code should be used to generate the gemmM label for filter matrix A
+  %\node [scale=1.5*\scale, rotate=90, above] (gemmM) at ($(TL)+(0,-0.5*\k*\unit)$)
+  %{gemmM};
+  %\draw [->, >=stealth, thick] (gemmM.north) -- ++(-0.5*\scale,0)
+  %node [above, scale=1.5*\scale, rotate=90] {\textbf{PassThrough}[k]};
 
   %% y,c dimension info on the matrix
   \foreach \ch [count=\ci from 0] in {1,...,\c}{
@@ -935,12 +940,12 @@
   \filterGemmA{#1}{#2}{#3}{#4}{#5}{#6}
   %% rewrite gemmK --> gemmN
   %% gemmN
-  \node [below, scale=1.5*\scale,fill=white]  at ($(TL)+(\c*\h*\w*\unit*0.1,-\k*\unit)$)
-  {$``gemmN"$};
+  \node [below, scale=1.5*\scale,fill=white]  at ($(TL)+(\c*\h*\w*\unit*0.2,-\k*\unit)$)
+  {gemmN};
   %% gemmM
-  \node [scale=1.5*\scale, rotate=-90, above] (gemmM) at ($(TL)+(\h*\w*\c*\unit, -0.5*\k*\unit)$) {$``gemmM"$};
+  \node [scale=1.5*\scale, rotate=-90, above] (gemmM) at ($(TL)+(\h*\w*\c*\unit, -0.5*\k*\unit)$) {gemmM};
   \draw [->, >=stealth, thick] (gemmM.north) -- ++(0.5*\scale, 0)
-  node [above, scale=1.5*\scale, rotate=-90] {PassThrough[$``k"$]};
+  node [above, scale=1.5*\scale, rotate=-90] {\textbf{PassThrough}[k]};
 }
 
 \newcommand{\pickElemInMatrix}[3]{
@@ -1008,7 +1013,7 @@
   \colorTensor{#1}{#2}{#3}{#4}{\firstCol}{#7}
   \node  [scale=1.5, left] at ($(TL)+(0, -0.5*\h*\unit)$) {#5};
   \node  [scale=1.5, below] at ($(TL)+(0.5*\w*\unit, -\h*\unit)$) {#6};
-  \node  [scale=1.5, above left] at ($(TL)+(0.5*\c*0.5*\unit, 0.5*\c*0.3*\unit)$) {$``c"$};
+  \node  [scale=1.5, above] at (TL) {c};
   \coordinate (backTL1) at (backTL);
   \coordinate (firstBR) at ($(TL)+(\w*\unit,-\h*\unit)$);
   %% Draw second input image
@@ -1026,7 +1031,7 @@
   %% Label dimension n
   \draw [thick, decorate, decoration = {calligraphic brace,amplitude=5pt}]
   ($(backTL1)+(0,0.3*\unit)$) --  ($(backTR3)+(0,0.3*\unit)$)
-  node [scale=1.5, pos=0.5, above, yshift=.5em] {$``n"$};
+  node [scale=1.5, pos=0.5, above] {n};
 
   %% restore TL
   \coordinate (TL) at (inputTensorreturn);
@@ -1075,9 +1080,9 @@
   \pgfmathsetmacro\smallunit{0.3*\unit}
   
   \coordinate (inputEmbedreturn) at (TL);
-  \node [left] at ($(TL)+(0,-0.5*\h*\unit)$) {$``y"$};
-  \node [below] at ($(TL)+(0.5*\w*\unit,-\h*\unit)$) {$``x"$};
-  \node [above] at (TL) {$``c"$};
+  \node [left] at ($(TL)+(0,-0.5*\h*\unit)$) {y};
+  \node [below] at ($(TL)+(0.5*\w*\unit,-\h*\unit)$) {x};
+  \node [above] at (TL) {c};
   \foreach \x in {0, 6, 14}{
     \foreach \y in {0, -6, -14}{
       \coordinate (TL) at ($(inputEmbedreturn)+(\x*\unit, \y*\unit)$);
@@ -1117,11 +1122,16 @@
   \inputTensorBreakDown{#1}{#2}{#3}{#4}{\firstCol}{#5}
   \draw [thick, decorate, decoration = {calligraphic brace,amplitude=5pt}]
   ($(inputEmbedreturn)+(\c*\halfunit,\c*\smallunit+\smallunit)$) --  ++(14*\unit+\w*\unit, 0)
-  node [pos=0.5, above, yshift=.5em] {$``wo"$};
+  node [pos=0.5, above, yshift=.5em] {wo};
 
   \draw [thick, decorate, decoration = {calligraphic brace,amplitude=5pt, mirror}]
   ($(inputEmbedreturn)+(-2.5*\unit,0)$) --  ++(0, -14*\unit-\w*\unit)
-  node [pos=0.5, left, xshift=-.5em] {$``ho"$};
+  node [pos=0.5, left, xshift=-.5em] {ho};
+
+  %% Label dimension n
+  \draw [thick, decorate, decoration = {calligraphic brace,amplitude=5pt}]
+  ($(TL)+(0,0.8)$) --  ++(16.5, 0)
+  node [scale=1.5, pos=0.5, above] {n};
   
   \coordinate (TL) at ($(TL)+(6,0)$);
   \inputTensorBreakDown{#1}{#2}{#3}{#4}{\secondCol}{#5}
@@ -1189,13 +1199,13 @@
   }
 
   \node [scale=1.5*\scale, rotate=90, above] (gemmK) at ($(inputGemmreturn)+(0, -0.5*\c*\h*\w*\unit)$)
-  {$``gemmK"$};
-  \draw [->, >=stealth, thick] (gemmK.north) -- ++(-2*\unit, 0)
-  node [above, scale=1.5*\scale, rotate=90] {Merge[$``c"$, $``y"$, $``x"$]};
+  {gemmK};
+  \draw [->, >=stealth, thick] (gemmK.north) -- ++(-0.5*\scale, 0)
+  node [above, scale=1.5*\scale, rotate=90] {\textbf{Merge}[c, y, x]};
   \node [scale=1.5*\scale, below] (gemmN) at ($(inputGemmreturn)+(0.3*\n*\unit, -\c*\h*\w*\unit)$)
-  {$``gemmN"$};
-  \draw [->, >=stealth, thick] (gemmN.east) -- ++(2*\unit, 0)
-  node [right, scale=1.5*\scale] {Merge[$``n"$, $``ho"$, $``wo"$]};
+  {gemmN};
+  \draw [->, >=stealth, thick] (gemmN.east) -- ++(0.5*\scale, 0)
+  node [right, scale=1.5*\scale] {\textbf{Merge}[n, ho, wo]};
   
   
   %% restore TL
@@ -1262,13 +1272,13 @@
   }
 
   \node [scale=1.5*\scale, rotate=90, above] (gemmK) at ($(inputGemmreturn)+(0, -0.5*\n*\unit)$)
-  {$``gemmK"$};
-  \draw [->, >=stealth, thick] (gemmK.north) -- ++(-2*\unit, 0)
-  node [above, scale=1.5*\scale, rotate=90] {Merge[$``n"$, $``ho"$, $``wo"$]};
+  {gemmK};
+  \draw [->, >=stealth, thick] (gemmK.north) -- ++(-0.5*\scale, 0)
+  node [above, scale=1.5*\scale, rotate=90] {\textbf{Merge}[n, ho, wo]};
   \node [scale=1.5*\scale, below] (gemmN) at ($(inputGemmreturn)+(0.3*\rows*\unit, -\n*\unit)$)
-  {$``gemmN"$};
-  \draw [->, >=stealth, thick] (gemmN.east) -- ++(2*\unit, 0)
-  node [right, scale=1.5*\scale] {Merge[$``c"$, $``y"$, $``x"$]};
+  {gemmN};
+  \draw [->, >=stealth, thick] (gemmN.east) -- ++(0.5*\scale, 0)
+  node [right, scale=1.5*\scale] {\textbf{Merge}[c, y, x]};
   
   
   %% restore TL
@@ -1295,16 +1305,18 @@
   %% First
   \tensor{#1}{#2}{#3}{#4}
   \colorTensor{#1}{#2}{#3}{#4}{\firstCol}{#6}
-  \node  [scale=1.5*\scale, left] at ($(TL)+(0, -0.5*\h*\unit)$) {$``ho"$};
-  \node  [scale=1.5*\scale, below] at ($(TL)+(0.5*\w*\unit, -\h*\unit)$) {$``wo"$};
-  \node  [scale=1.5*\scale, above left] at ($(TL)+(0.5*\c*0.5*\unit, 0.5*\c*0.3*\unit)$) {$``k"$};
+  \node  [scale=1.5*\scale, left] at ($(TL)+(0, -0.5*\h*\unit)$) {ho};
+  \node  [scale=1.5*\scale, below] at ($(TL)+(0.5*\w*\unit, -\h*\unit)$) {wo};
+  \node  [scale=1.5*\scale, above left] at ($(TL)+(0.5*\c*0.5*\unit, 0.5*\c*0.3*\unit)$) {k};
   \coordinate (backTL1) at (backTL);
+  \coordinate (midB1) at ($(TL)+(0.5*\w*\unit, -\h*\unit)$);
 
   %% Second
   \coordinate (TL) at ($(TL)+(\w*\unit+0.5*\c*\unit+2*\unit,0)$);
   \tensor{#1}{#2}{#3}{#4}
   \colorTensor{#1}{#2}{#3}{#4}{\secondCol}{#6}
   \coordinate (backTL2) at (backTL);
+  \coordinate (midB2) at ($(TL)+(0.5*\w*\unit, -\h*\unit)$);
 
   %% Third
   \coordinate (TL) at ($(TL)+(\w*\unit+0.5*\c*\unit+6*\unit,0)$);
@@ -1312,10 +1324,11 @@
   \colorTensor{#1}{#2}{#3}{#4}{\thirdCol}{#6}
   \node [scale=2] at ($(TL)+(-2*\unit,-0.5*\h*\unit)$) {$\cdots$};
   \coordinate (backTR3) at (backTR);
+  \coordinate (midB3) at ($(TL)+(0.5*\w*\unit, -\h*\unit)$);
   %% Label dimension n
   \draw [thick, decorate, decoration = {calligraphic brace,amplitude=5pt}]
   ($(backTL1)+(0,0.3*\unit)$) --  ($(backTR3)+(0,0.3*\unit)$)
-  node [scale=1.5*\scale, pos=0.5, above, yshift=.5em] {$``n"$};
+  node [scale=1.5*\scale, pos=0.5, above] {n};
 }
 
 \newcommand{\outputGemmC}[7]{
@@ -1366,14 +1379,14 @@
     \draw ($(oGemmreturn)+(\col*\unit,0)$) -- ++(0,-\k*\unit);
   }
 
-  \node [scale=1.5*\scale, rotate=-90, above] (gemmM) at ($(oGemmreturn)+(\n*\unit, -0.5*\k*\unit)$) {$``gemmM"$};
+  \node [scale=1.5*\scale, rotate=-90, above] (gemmM) at ($(oGemmreturn)+(\n*\unit, -0.5*\k*\unit)$) {gemmM};
   \draw [->, >=stealth, thick] (gemmM.north) -- ++(0.5*\scale, 0)
-  node [above, scale=1.5*\scale, rotate=-90] {PassThrough[$``k"$]};
+  node [above, scale=1.5*\scale, rotate=-90] {\textbf{PassThrough}[k]};
 
   \node [below, scale=1.5*\scale] (gemmN)  at ($(oGemmreturn)+(\n*\unit*0.3,-\k*\unit)$)
-  {$``gemmN"$};
+  {gemmN};
   \draw [->, >=stealth, thick] (gemmN.east) -- ++(0.5*\scale,0)
-  node [right, scale=1.5*\scale] {Merge[$``n"$,$``ho"$,$``wo"$]};
+  node [right, scale=1.5*\scale] {\textbf{Merge}[n,ho,wo]};
 
   %% restore TL
   \coordinate (TL) at (oGemmreturn);
@@ -1427,14 +1440,14 @@
     \draw ($(oGemmreturn)+(\col*\unit,0)$) -- ++(0,-\k*\unit);
   }
 
-  \node [scale=1.5*\scale, rotate=90, above] (gemmM) at ($(oGemmreturn)+(0, -0.5*\k*\unit)$) {$``gemmM"$};
+  \node [scale=1.5*\scale, rotate=90, above] (gemmM) at ($(oGemmreturn)+(0, -0.5*\k*\unit)$) {gemmM};
   \draw [->, >=stealth, thick] (gemmM.north) -- ++(-0.5*\scale, 0)
-  node [above, scale=1.5*\scale, rotate=90] {PassThrough[$``k"$]};
+  node [above, scale=1.5*\scale, rotate=90] {\textbf{PassThrough}[k]};
 
   \node [below, scale=1.5*\scale] (gemmK)  at ($(oGemmreturn)+(\n*\unit*0.3,-\k*\unit)$)
-  {$``gemmK"$};
+  {gemmK};
   \draw [->, >=stealth, thick] (gemmK.east) -- ++(0.5*\scale,0)
-  node [right, scale=1.5*\scale] {Merge[$``n"$,$``ho"$,$``wo"$]};
+  node [right, scale=1.5*\scale] {\textbf{Merge}[n,ho,wo]};
 
   %% restore TL
   \coordinate (TL) at (oGemmreturn);

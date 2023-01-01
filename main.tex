@@ -6,26 +6,9 @@
 
 \maketitle
 
-%\tikzexternaldisable
-\tikzsetnextfilename{filter_tensor}
-\begin{figure}[!h]
-  \centering
-  \begin{tikzpicture}
-    \def\firstCol{red}
-    \def\secondCol{gray}
-    \def\thirdCol{brown}
-    \def\unitTensor{0.3}
-    \coordinate (TL) at (0,0);
-    \filterTensor{3}{3}{3}{\unitTensor}{30}
-    \coordinate (TL) at (secondTL);
-    \pickElemInTensor{\unitTensor}
-  \end{tikzpicture}
-  \caption{Filter tensor $F\{``k",``c",``y",``x"\}$}
-  \label{fig:filter_tensor}
-\end{figure}
 
 %\tikzexternaldisable
-\tikzsetnextfilename{filter_matrix_A}
+\tikzsetnextfilename{filter_tensor_to_matrix_A}
 \begin{figure}[!h]
   \centering
   \begin{tikzpicture}
@@ -33,12 +16,20 @@
     \def\secondCol{gray}
     \def\thirdCol{brown}
     \def\unitMatrix{0.25}
+    \def\unitTensor{0.3}
+
     \coordinate (TL) at (0,0);
+    \filterTensor{3}{3}{3}{\unitTensor}{30}
+    \coordinate (TL) at (secondTL);
+    \pickElemInTensor{\unitTensor}
+
+    \coordinate (matrixTL) at ($(TL)+(8, 0)$);
+    \coordinate (TL) at (matrixTL);
     \filterGemmA{3}{3}{3}{10}{\unitMatrix}{1}
     \pickElemInMatrix{1}{20}{\unitMatrix}
   \end{tikzpicture}
-  \caption{Filter matrix $A\{``gemmM",``gemmK"\}$}
-  \label{fig:filter_matrix_A}
+  \caption{Filter tensor F\{k,c,y,x\} to matrix A\{gemmM,gemmK\}}
+  \label{fig:filter_tensor_to_matrix_A}
 \end{figure}
 
 In implicit gemm, tensors are converted to matrices and convolution
@@ -62,7 +53,7 @@ Then we figure out the relationship between the coordinate of the element in the
 matrix and its coordinate in the tensor.
 During this process, we also understand what a transform is.
 
-\Fig \ref{fig:filter_tensor} shows the coordinate transformation of the filter tensor
+\Fig \ref{fig:filter_tensor_to_matrix_A} shows the coordinate transformation of the filter tensor
 in a forward convolution context.
 
 %\tikzexternaldisable
@@ -74,9 +65,9 @@ in a forward convolution context.
     \def\secondCol{blue!50!gray}
     \def\thirdCol{orange}
     \coordinate (TL) at (0,0);
-    \inputTensor{8}{8}{3}{0.3}{$``hi"$}{$``wi"$}{30}
+    \inputTensor{8}{8}{3}{0.3}{hi}{wi}{30}
   \end{tikzpicture}
-  \caption{Input tensor $X\{``n",``c",``hi",``wi"\}$}
+  \caption{Input tensor X\{n,c,hi,wi\}}
   \label{fig:input_tensor}
 \end{figure}
 
@@ -90,10 +81,10 @@ in a forward convolution context.
     \def\thirdCol{orange!60!white}
     \coordinate (PadTL) at (0,0);
     \coordinate (TL) at (PadTL);
-    \inputTensor{10}{10}{3}{0.3}{$``hipad"$}{$``wipad"$}{30}
+    \inputTensor{10}{10}{3}{0.3}{hipad}{wipad}{30}
     \inputTensorPad{8}{8}{0.3}
   \end{tikzpicture}
-  \caption{Input tensor after padding $\text{Pad}\{1,1,1,1\}[``hipad",``wipad"] \leftarrow [``hi",``wi"]$}
+  \caption{Input tensor after padding $\text{Pad}\{1,1,1,1\}[hipad,wipad] \leftarrow [hi,wi]$}
   \label{fig:input_pad_tensor}
 \end{figure}
 
@@ -108,7 +99,7 @@ in a forward convolution context.
     \coordinate (TL) at (EmbedTL);
     \inputTensorAfterEmbed{3}{3}{3}{0.25}{30}
   \end{tikzpicture}
-  \caption{Input tensor after embedding Embed\{strideH, dilationH\}[$``ho"$,$``y"$] $\leftarrow$ [$``hipad"$] and Embed\{strideW, dilationW\}[$``wo"$,$``x"$] $\leftarrow$ [$``wipad"$]}
+  \caption{Input tensor after embedding Embed\{strideH, dilationH\}[ho,y] $\leftarrow$ [hipad] and Embed\{strideW, dilationW\}[wo,x] $\leftarrow$ [wipad]}
   \label{fig:input_embed_tensor}
 \end{figure}
 
@@ -141,7 +132,7 @@ in a forward convolution context.
     \coordinate (TL) at (outputTensorTL);
     \outputTensor{4}{4}{10}{\unitTensor}{1}{10}
   \end{tikzpicture}
-  \caption{Output tensor $O\{``n",``k", ``ho", ``wo"\}$}
+  \caption{Output tensor O\{n,k,ho,wo\}}
   \label{fig:output_tensor}
 \end{figure}
 
@@ -158,7 +149,7 @@ in a forward convolution context.
     \coordinate (TL) at (outputMatrixTL);
     \outputGemmC{10}{60}{4}{4}{\unitMatrix}{10}{.9}
   \end{tikzpicture}
-  \caption{Output matrix $C\{``gemmM",``gemmN"\}$}
+  \caption{Output matrix C\{gemmM,gemmN\}}
   \label{fig:output_matrix_C}
 \end{figure}
 
@@ -179,7 +170,7 @@ in a forward convolution context.
     \def\thirdCol{\thirdInputCol}
     \coordinate (inputTensorTL) at (0,0);
     \coordinate (TL) at (inputTensorTL);
-    \inputTensor{8}{8}{3}{\unitTensor}{$``hi"$}{$``wi"$}{30}
+    \inputTensor{8}{8}{3}{\unitTensor}{hi}{wi}{30}
 
     
     %% filter tensor
@@ -239,7 +230,7 @@ in a forward convolution context.
     \def\firstCol{purple}
     \def\secondCol{blue!50!gray}
     \def\thirdCol{orange}
-    \coordinate (inputGemmTL) at (8.5,9);
+    \coordinate (inputGemmTL) at (7.5,9);
     \coordinate (TL) at (inputGemmTL);
     \inputGemmB{3}{3}{3}{60}{4}{4}{\unitMatrix}{.7}
 
@@ -247,7 +238,7 @@ in a forward convolution context.
     \def\firstCol{magenta}
     \def\secondCol{teal!50!gray}
     \def\thirdCol{olive}
-    \coordinate (outputGemmTL) at (8.5,0);
+    \coordinate (outputGemmTL) at (7.5,0);
     \coordinate (TL) at (outputGemmTL);
     \outputGemmC{10}{60}{4}{4}{\unitMatrix}{10}{.7}
 
@@ -273,7 +264,7 @@ in a forward convolution context.
     \coordinate (TL) at (outputMatrixTL);
     \outputGemmA{10}{60}{4}{4}{\unitMatrix}{10}{.9}
   \end{tikzpicture}
-  \caption{Output matrix $A\{``gemmM",``gemmK"\}$ for conv2d\_bwd\_weight}
+  \caption{Output matrix A\{gemmM,gemmK\} for conv2d\_bwd\_weight}
   \label{fig:output_matrix_A_conv2d_bwd_weight}
 \end{figure}
 
@@ -289,7 +280,7 @@ in a forward convolution context.
     \coordinate (TL) at (inputGemmTL);
     \inputGemmBBwdWeight{3}{3}{3}{60}{4}{4}{0.25}{1}
   \end{tikzpicture}
-  \caption{Input matrix $B\{``gemmK",``gemmN"\}$ for conv2d\_bwd\_weight}
+  \caption{Input matrix B\{gemmK,gemmN\} for conv2d\_bwd\_weight}
   \label{fig:input_matrix_B_con2d_bwd_weight}
 \end{figure}
 
@@ -306,8 +297,79 @@ in a forward convolution context.
     \filterGemmC{3}{3}{3}{10}{\unitMatrix}{1}
     %\pickElemInMatrix{1}{20}{\unitMatrix}
   \end{tikzpicture}
-  \caption{Filter matrix $C\{``gemmM",``gemmN"\}$}
+  \caption{Filter matrix C\{gemmM,gemmN\}}
   \label{fig:filter_matrix_C}
+\end{figure}
+
+%\tikzexternaldisable
+\tikzsetnextfilename{conv2d_bwd_weight}
+\begin{figure}[!h]
+  \centering
+  \begin{tikzpicture}
+    \def\unitTensor{0.3}
+
+    \def\firstInputCol{purple}
+    \def\secondInputCol{blue!50!gray}
+    \def\thirdInputCol{orange}
+    
+    %% input tensor
+    \def\firstCol{\firstInputCol}
+    \def\secondCol{\secondInputCol}
+    \def\thirdCol{\thirdInputCol}
+    \coordinate (inputTensorTL) at (0,0);
+    \coordinate (TL) at (inputTensorTL);
+    \inputTensor{8}{8}{3}{\unitTensor}{hi}{wi}{30}
+
+    %% output tensor
+    \def\firstCol{magenta}
+    \def\secondCol{teal!50!gray}
+    \def\thirdCol{olive}
+    \def\unitTensor{0.3}
+    \coordinate (outputTensorTL) at (0, -6);
+    \coordinate (TL) at (outputTensorTL);
+    \outputTensor{4}{4}{10}{\unitTensor}{1}{10}
+
+
+    \draw [ultra thick, \firstInputCol, ->,>=stealth] ($(firstBR)+(-4*\unitTensor,-.8)$) -- ++(0, -1.5) node [above, pos=.5, sloped, scale=1.2, black] {conv};
+    \draw [ultra thick, \secondInputCol, ->,>=stealth] ($(secondmidB)+(0,-.5)$) -- ++(0, -1.8) node [above, pos=.5, sloped, scale=1.2, black] {conv};
+    \draw [ultra thick, \thirdInputCol, ->,>=stealth] ($(thirdBL)+(4*\unitTensor,-.5)$) -- ++(0, -1.8) node [above, pos=.5, sloped, scale=1.2, black] {conv};
+
+    %% filter tensor
+    \def\firstCol{red}
+    \def\secondCol{gray}
+    \def\thirdCol{brown}
+    \coordinate (filterTensorTL) at (-4,-10);
+    \coordinate (TL) at (filterTensorTL);
+    \filterTensor{3}{3}{3}{\unitTensor}{30}
+    \draw [ultra thick, ->, >=stealth, \firstInputCol] ($(midB1)+(0, -.5)$) -- (labelK);
+
+    \coordinate (TL) at ($(TL)+(6,0)$);
+    \filterTensor{3}{3}{3}{\unitTensor}{30}
+    \draw [ultra thick, ->, >=stealth, \secondInputCol] ($(midB2)+(0, -.2)$) -- (labelK);
+    
+    \coordinate (TL) at ($(TL)+(7,0)$);
+    \filterTensor{3}{3}{3}{\unitTensor}{30}
+    \draw [ultra thick, ->, >=stealth, \thirdInputCol] ($(midB3)+(0, -.2)$) -- (labelK);
+    \node [left, scale=2] at ($(TL)+(-.5, -1.5*\unitTensor)$) {$\cdots$};
+
+    \coordinate (filterTensorTL) at (3,-14);
+    \coordinate (TL) at (filterTensorTL);
+    \filterTensor{3}{3}{3}{\unitTensor}{30}
+    \draw [ultra thick, <-, >=stealth] (labelK) -- ++(0, 1.5)
+    node [pos=.5, right, scale=1.2] {sum};
+
+    %% Adding labels
+    \node [scale=1.5, below left] at ($(inputTensorTL)+(-1.5,0)$) {Input Tensor};
+    \node [scale=1.5, below left, align=center] at ($(filterTensorTL)+(-1.5,0)$)
+    {Filter Loss\\
+      Gradient $\bold{\frac{\partial L}{\partial F}}$};
+    \node [scale=1.5, below left, align=center] at ($(outputTensorTL)+(-1.5,0)$)
+    {Output Loss\\
+      Gradient $\bold{\frac{\partial L}{\partial O}}$};
+    
+  \end{tikzpicture}
+  \caption{Backward Weight Convolution}
+  \label{fig:Conv_bwd_weight}
 \end{figure}
 
 %\tikzexternaldisable
@@ -344,6 +406,7 @@ in a forward convolution context.
     \node [scale=1.5,right] at ($(outputGemmTL)+(0,-4)$) {Output Matrix A};
     \node [scale=1.5,left] at ($(inputGemmTL)+(0,-2)$) {Input Matrix B};
     \node [scale=1.5,right] at ($(filterGemmTL)+(0,-4)$) {Filter Matrix C};
+    
   \end{tikzpicture}
   \caption{GEMM for conv2d\_bwd\_weight}
   \label{fig:conv2d_bwd_weiggt_gemm}
