@@ -1454,6 +1454,30 @@
 }
 
 
+\newcommand{\drawMatrix}[6]{
+  %% (TL) predefined point
+  %% #1: height
+  %% #2: width
+  %% #3: unit
+  %% #4: text in the cells
+  %% #5: 0: regular text
+  %%     1: partial derivatives
+  %% #6: scale
+  \def\h{#1}
+  \def\w{#2}
+  \def\unit{#3}
+  \def\var{#4}
+  \def\mode{#5}
+  \def\scale{#6}
+  \foreach \row [count=\ri from 0] in {1,...,\h}{
+    \foreach \col [count=\ci from 0] in {1,...,\w}{
+      \coordinate (cellTL) at ($(TL)+(\ci*\unit, -\ri*\unit)$);
+      \draw [thick, fill=white] (cellTL) rectangle ++(\unit, -\unit)
+      node [pos=.5, scale=\scale, black] {\ifthenelse{\mode=0}{$\bold{\var}_{\row\col}$}{$\frac{\partial \bold{L}}{\partial \bold{\var}_{\row\col}}$}};
+    }
+  }
+}
+
 %%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "volkov_model"
