@@ -1,11 +1,19 @@
 \input{preamble}
 
+
+\setcounter{tocdepth}{2}
 \begin{document}
 
-\title{Coordinate Transformations}
+\title{rocMLIR Lowering Passes and Code Generation}
 
 \maketitle
 
+\tableofcontents
+\newpage
+
+\section{Convolution to Gemm \emph{rock-conv-to-gemm}}\label{sec:conv-to-gemm}
+
+\subsection{Coordination Transformation}\label{sec:coord_transform}
 
 In implicit gemm, i.e. igemm, tensors are converted to matrices and convolution
 is performed as matrix multiplication, i.e. GEMM.
@@ -13,13 +21,13 @@ Cooridinate transformation helps figure out the coordinates of a data in the
 tensor given its coordinates in the matrix, which avoids data movement in memory
 during tensor-to-matrix conversions.
 
-We use the following three concepts to describe a dimension
+We use the following three variables to describe a dimension
 \begin{itemize}
 \item name. A string used to reference the dimension.
 \item dim. The index of this dimension in the tensor or matrix.
   For example, for the filter tensor F\{c,y,x\},
-  $c$ is dim 0, $y$ is dim 1, and $x$ is dim 2.
-\item size. Number of elements along this dimension.
+  the dims of $c$, $y$, and $x$ are 0, 1, 2.
+\item size. Number of elements along this dimension. It is also known as bound.
 \end{itemize}
 
 To understand coordinate transformation, we first figure out where an element
@@ -28,8 +36,20 @@ Then we figure out the relationship between the coordinate of the element in the
 matrix and its coordinate in the tensor.
 During this process, we also understand what a transform is.
 
+\hl{TODOs:}
+\begin{itemize}
+\item Explain what a transform is.
+\item Explain what a transform map builder is.
+\item Explain the difference between a top-down and a bottom-up transform map builder
+\item Introduce commonly used transforms: passthrough, pad, embed, merge/unfold, unmerge,
+  addDim, slice, and broadcast.
+\item Illustrate each transform with graphs
+\end{itemize}
 
-\section{Forward Convolution}
+
+After a solid understanding of coordinate transforms, we are now ready to dive into the
+conversion from tensors to matrices for all three directions of convolution.
+\subsection{Forward Convolution}
 
 \Fig \ref{fig:conv2d} shows how a forward convolution is performed.
 In a general setting of a convolutional layer in CNN, a batch of n input images are
@@ -44,212 +64,254 @@ to produce a batch of n output images.
 \tikzsetnextfilename{conv2d}
 \begin{figure}[!h]
   \centering
-  \begin{tikzpicture}
-    \def\unitTensor{0.3}
+  \includegraphics[width=.5\textwidth]{conv2d}
+  % \begin{tikzpicture}
+  %   \def\unitTensor{0.3}
 
-    \def\firstInputCol{purple}
-    \def\secondInputCol{blue!50!gray}
-    \def\thirdInputCol{orange}
+  %   \def\firstInputCol{purple}
+  %   \def\secondInputCol{blue!50!gray}
+  %   \def\thirdInputCol{orange}
     
-    %% input tensor
-    \def\firstCol{\firstInputCol}
-    \def\secondCol{\secondInputCol}
-    \def\thirdCol{\thirdInputCol}
-    \coordinate (inputTensorTL) at (0,0);
-    \coordinate (TL) at (inputTensorTL);
-    \inputTensor{8}{8}{3}{\unitTensor}{hi}{wi}{30}
+  %   %% input tensor
+  %   \def\firstCol{\firstInputCol}
+  %   \def\secondCol{\secondInputCol}
+  %   \def\thirdCol{\thirdInputCol}
+  %   \coordinate (inputTensorTL) at (0,0);
+  %   \coordinate (TL) at (inputTensorTL);
+  %   \inputTensor{8}{8}{3}{\unitTensor}{hi}{wi}{30}
 
     
-    %% filter tensor
-    \def\firstCol{red}
-    \def\secondCol{gray}
-    \def\thirdCol{brown}
-    \coordinate (filterTensorTL) at (3,-6);
-    \coordinate (TL) at (filterTensorTL);
-    \filterTensor{3}{3}{3}{\unitTensor}{30}
+  %   %% filter tensor
+  %   \def\firstCol{red}
+  %   \def\secondCol{gray}
+  %   \def\thirdCol{brown}
+  %   \coordinate (filterTensorTL) at (3,-6);
+  %   \coordinate (TL) at (filterTensorTL);
+  %   \filterTensor{3}{3}{3}{\unitTensor}{30}
 
-    \draw [ultra thick, \firstInputCol, ->,>=stealth] ($(firstBR)+(0,-.5)$) -- (labelK.west) node [above, pos=.5, sloped, scale=1.2, black] {conv};
-    \draw [ultra thick, \secondInputCol, ->,>=stealth] ($(secondmidB)+(0,-.5)$) -- (labelK.north) node [above, pos=.5, sloped, scale=1.2, black] {conv};
-    \draw [ultra thick, \thirdInputCol, ->,>=stealth] ($(thirdBL)+(0,-.5)$) -- (labelK.east) node [above, pos=.5, sloped, scale=1.2, black] {conv};
+  %   \draw [ultra thick, \firstInputCol, ->,>=stealth] ($(firstBR)+(0,-.5)$) -- (labelK.west) node [above, pos=.5, sloped, scale=1.2, black] {conv};
+  %   \draw [ultra thick, \secondInputCol, ->,>=stealth] ($(secondmidB)+(0,-.5)$) -- (labelK.north) node [above, pos=.5, sloped, scale=1.2, black] {conv};
+  %   \draw [ultra thick, \thirdInputCol, ->,>=stealth] ($(thirdBL)+(0,-.5)$) -- (labelK.east) node [above, pos=.5, sloped, scale=1.2, black] {conv};
 
-    %% output tensor
-    \def\firstCol{magenta}
-    \def\secondCol{teal!50!gray}
-    \def\thirdCol{olive}
-    \def\unitTensor{0.3}
-    \coordinate (outputTensorTL) at (0, -10);
-    \coordinate (TL) at (outputTensorTL);
-    \outputTensor{4}{4}{10}{\unitTensor}{1}{10}
+  %   %% output tensor
+  %   \def\firstCol{magenta}
+  %   \def\secondCol{teal!50!gray}
+  %   \def\thirdCol{olive}
+  %   \def\unitTensor{0.3}
+  %   \coordinate (outputTensorTL) at (0, -10);
+  %   \coordinate (TL) at (outputTensorTL);
+  %   \outputTensor{4}{4}{10}{\unitTensor}{1}{10}
 
-    \draw [ultra thick, ->, >=stealth, \firstInputCol] ($(midB.south)+(0,-.2)$) --
-    ($(backTL1)+(.5,.2)$);
-    \draw [ultra thick, ->, >=stealth, \secondInputCol] ($(midB.south)+(.4,-.2)$) --
-    ($(backTL2)+(.5,.2)$);
-    \draw [ultra thick, ->, >=stealth, \thirdInputCol] ($(midB.south)+(.8,-.2)$) --
-    ($(backTR3)+(-.5,.2)$);
+  %   \draw [ultra thick, ->, >=stealth, \firstInputCol] ($(midB.south)+(0,-.2)$) --
+  %   ($(backTL1)+(.5,.2)$);
+  %   \draw [ultra thick, ->, >=stealth, \secondInputCol] ($(midB.south)+(.4,-.2)$) --
+  %   ($(backTL2)+(.5,.2)$);
+  %   \draw [ultra thick, ->, >=stealth, \thirdInputCol] ($(midB.south)+(.8,-.2)$) --
+  %   ($(backTR3)+(-.5,.2)$);
 
-    %% Adding labels
-    \node [scale=1.5, below left] at ($(inputTensorTL)+(-1.5,0)$) {Input Tensor};
-    \node [scale=1.5, below left] at ($(filterTensorTL)+(-1.5,0)$) {Filter Tensor};
-    \node [scale=1.5, below left] at ($(outputTensorTL)+(-1.5,0)$) {Output Tensor};
+  %   %% Adding labels
+  %   \node [scale=1.5, below left] at ($(inputTensorTL)+(-1.5,0)$) {Input Tensor};
+  %   \node [scale=1.5, below left] at ($(filterTensorTL)+(-1.5,0)$) {Filter Tensor};
+  %   \node [scale=1.5, below left] at ($(outputTensorTL)+(-1.5,0)$) {Output Tensor};
     
-  \end{tikzpicture}
-  \caption{Forward Convolution}
+  % \end{tikzpicture}
+  \caption{Forward Convolution Diagram}
   \label{fig:conv2d}
 \end{figure}
 
-\subsection{Filter Tensor, a.k.a. kernel/feature}
-\Fig \ref{fig:filter_tensor_to_matrix_A} shows the coordinate transformation of the filter tensor
-into a matrix in a forward convolution context.
+\subsubsection{Filter Tensor}
+\Fig \ref{fig:filter_tensor_to_matrix_A} shows the coordinate transformation of
+the filter tensor F\{k,c,y,x\} into a matrix A\{gemmM,gemmK\} in a forward convolution.
+The c, y, x dimensions in the tensor are merged to form the gemmK dimension in the
+matrix.
+The k dimension in the tensor is passed through as the gemmM dimension in the matrix.
+
+\hl{TODO: Illustrate how to compute coordinate of the blue element from the matrix
+to the tensor in the example.}
 
 % \tikzexternaldisable
 \tikzsetnextfilename{filter_tensor_to_matrix_A}
 \begin{figure}[!h]
   \centering
-  \begin{tikzpicture}
-    \def\firstCol{red}
-    \def\secondCol{gray}
-    \def\thirdCol{brown}
-    \def\unitMatrix{0.25}
-    \def\unitTensor{0.3}
+  \includegraphics[width=.6\textwidth]{filter_tensor_to_matrix_A}
+  % \begin{tikzpicture}
+  %   \def\firstCol{red}
+  %   \def\secondCol{gray}
+  %   \def\thirdCol{brown}
+  %   \def\unitMatrix{0.25}
+  %   \def\unitTensor{0.3}
 
-    \coordinate (TL) at (0,0);
-    \filterTensor{3}{3}{3}{\unitTensor}{30}
-    \coordinate (TL) at (secondTL);
-    \pickElemInTensor{\unitTensor}
+  %   \coordinate (TL) at (0,0);
+  %   \filterTensor{3}{3}{3}{\unitTensor}{30}
+  %   \coordinate (TL) at (secondTL);
+  %   \pickElemInTensor{\unitTensor}
 
-    \coordinate (matrixTL) at ($(TL)+(8, 0)$);
-    \coordinate (TL) at (matrixTL);
-    \filterGemmA{3}{3}{3}{10}{\unitMatrix}{1}
-    \pickElemInMatrix{1}{20}{\unitMatrix}
-  \end{tikzpicture}
+  %   \coordinate (matrixTL) at ($(TL)+(5, 0)$);
+  %   \coordinate (TL) at (matrixTL);
+  %   \filterGemmA{3}{3}{3}{10}{\unitMatrix}{1}
+  %   \pickElemInMatrix{1}{20}{\unitMatrix}
+  % \end{tikzpicture}
   \caption{Filter tensor F\{k,c,y,x\} to matrix A\{gemmM,gemmK\} in conv2d}
   \label{fig:filter_tensor_to_matrix_A}
 \end{figure}
 
 
-\subsection{Input Tensor, a.k.a. image}
+\subsubsection{Input Tensor}
+The input tensor goes through a series of transformations to be converted into a matrix.
+we first pad the input images along the hi and wi dimensions according to the
+padding parameters.
+\Fig \ref{fig:input_tensor_to_pad} shows the conversion from the original tensor
+X\{n,c,hi,wi\} (left) to a padded tensor X\{n,c,hipad,wipad\} (right) with padding
+parameters \{1,1,1,1\}.
 
-\Fig \ref{fig:input_tensor} shows how the input tensor X\{n,c,hi,wi\} looks like.
+\hl{TODO: illustrate how to compute coordinates.}
 
 %\tikzexternaldisable
-\tikzsetnextfilename{input_tensor}
+\tikzsetnextfilename{input_tensor_to_pad}
 \begin{figure}[!h]
   \centering
-  \begin{tikzpicture}
-    \def\firstCol{purple}
-    \def\secondCol{blue!50!gray}
-    \def\thirdCol{orange}
-    \coordinate (TL) at (0,0);
-    \inputTensor{8}{8}{3}{0.3}{hi}{wi}{30}
-  \end{tikzpicture}
-  \caption{Input tensor X\{n,c,hi,wi\}}
-  \label{fig:input_tensor}
+  \includegraphics[width=.9\textwidth]{input_tensor_to_pad}
+  % \begin{tikzpicture}
+  %   \def\firstCol{purple}
+  %   \def\secondCol{blue!50!gray}
+  %   \def\thirdCol{orange}
+  %   \coordinate (TL) at (0,0);
+  %   \inputTensor{8}{8}{3}{0.3}{hi}{wi}{30}
+
+  %   %% padded tensor
+  %   \def\firstCol{purple!60!white}
+  %   \def\secondCol{blue!50!gray!60!white}
+  %   \def\thirdCol{orange!60!white}
+  %   \coordinate (PadTL) at ($(TL)+(15,.3)$);
+  %   \coordinate (TL) at (PadTL);
+  %   \inputTensor{10}{10}{3}{0.3}{hipad}{wipad}{30}
+  %   \inputTensorPad{8}{8}{0.3}
+  % \end{tikzpicture}
+  \caption{Input tensor X\{n,c,hi,wi\} (left) and
+    after padding $\text{Pad}\{1,1,1,1\}[hipad,wipad] \leftarrow [hi,wi]$ (right)}
+  \label{fig:input_tensor_to_pad}
 \end{figure}
 
-To transform the input tensor into a matrix, we first pad the input images along the hi and wi
-dimensions according to the padding parameters.
-\Fig \ref{fig:input_pad_tensor} shows an example of padding 1 pixel around the image.
 
 % \tikzexternaldisable
-\tikzsetnextfilename{input_pad_tensor}
-\begin{figure}[!h]
-  \centering
-  \begin{tikzpicture}
-    \def\firstCol{purple!60!white}
-    \def\secondCol{blue!50!gray!60!white}
-    \def\thirdCol{orange!60!white}
-    \coordinate (PadTL) at (0,0);
-    \coordinate (TL) at (PadTL);
-    \inputTensor{10}{10}{3}{0.3}{hipad}{wipad}{30}
-    \inputTensorPad{8}{8}{0.3}
-  \end{tikzpicture}
-  \caption{Input tensor after padding $\text{Pad}\{1,1,1,1\}[hipad,wipad] \leftarrow [hi,wi]$}
-  \label{fig:input_pad_tensor}
-\end{figure}
+% \tikzsetnextfilename{input_pad_tensor}
+% \begin{figure}[!h]
+%   \centering
+%   %\includegraphics[width=.4\textwidth]{input_pad_tensor}
+%   \begin{tikzpicture}
+%     \def\firstCol{purple!60!white}
+%     \def\secondCol{blue!50!gray!60!white}
+%     \def\thirdCol{orange!60!white}
+%     \coordinate (PadTL) at (0,0);
+%     \coordinate (TL) at (PadTL);
+%     \inputTensor{10}{10}{3}{0.3}{hipad}{wipad}{30}
+%     \inputTensorPad{8}{8}{0.3}
+%   \end{tikzpicture}
+%   \caption{Input tensor after padding $\text{Pad}\{1,1,1,1\}[hipad,wipad] \leftarrow [hi,wi]$}
+%   \label{fig:input_pad_tensor}
+% \end{figure}
 
-Then we break down the input images (\{c, hipad, wipad\}) into sub-images (\{c,y,x\}) consisting of pixels
-that are corresponding to the filter tensor.
+Then we break down the input images (\{c, hipad, wipad\}) into sub-images (\{c,y,x\})
+consisting of pixels that are corresponding to the filter tensor, as shown in
+\Fig \ref{fig:input_embed_tensor}.
 This process is performed according to the stride and dilation parameters.
 
-\hl{TODO: add more details about the embed transform.}
+\hl{TODO: add more details about the coordinate computation of the embed transform.}
 
 \tikzsetnextfilename{input_embed_tensor}
 \begin{figure}[!h]
   \centering
-  \begin{tikzpicture}
-    \def\firstCol{purple}
-    \def\secondCol{blue!50!gray}
-    \def\thirdCol{orange}
-    \coordinate (EmbedTL) at (0,0);
-    \coordinate (TL) at (EmbedTL);
-    \inputTensorAfterEmbed{3}{3}{3}{0.25}{30}
-  \end{tikzpicture}
+  \includegraphics[width=.9\textwidth]{input_embed_tensor}
+  % \begin{tikzpicture}
+  %   \def\firstCol{purple}
+  %   \def\secondCol{blue!50!gray}
+  %   \def\thirdCol{orange}
+  %   \coordinate (EmbedTL) at (0,0);
+  %   \coordinate (TL) at (EmbedTL);
+  %   \inputTensorAfterEmbed{3}{3}{3}{0.25}{30}
+  % \end{tikzpicture}
   \caption{Input tensor after embedding Embed\{strideH, dilationH\}[ho,y] $\leftarrow$ [hipad] and Embed\{strideW, dilationW\}[wo,x] $\leftarrow$ [wipad]}
   \label{fig:input_embed_tensor}
 \end{figure}
 
-
-At last, the broken down sub-images can be flattened into a matrix as shown in
+At last, the sub-images can be flattened into a matrix as shown in
 \Fig \ref{fig:input_matrix_B}.
+The c, y, x dimensions in the tensor are merged to form the gemmK dimension
+in the matrix.
+The n, ho, wo dimensions in the tensor are merged to form the gemmN
+dimension in the matrix.
 %\tikzexternaldisable
 \tikzsetnextfilename{input_matrix_B}
 \begin{figure}[!h]
   \centering
-  \begin{tikzpicture}
-    \def\firstCol{purple}
-    \def\secondCol{blue!50!gray}
-    \def\thirdCol{orange}
-    \coordinate (inputGemmTL) at (0,0);
-    \coordinate (TL) at (inputGemmTL);
-    \inputGemmB{3}{3}{3}{60}{4}{4}{0.25}{1}
-  \end{tikzpicture}
+  \includegraphics[width=.6\textwidth]{input_matrix_B}
+  % \begin{tikzpicture}
+  %   \def\firstCol{purple}
+  %   \def\secondCol{blue!50!gray}
+  %   \def\thirdCol{orange}
+  %   \coordinate (inputGemmTL) at (0,0);
+  %   \coordinate (TL) at (inputGemmTL);
+  %   \inputGemmB{3}{3}{3}{60}{4}{4}{0.25}{1}
+  % \end{tikzpicture}
   \caption{Input matrix B\{gemmK,gemmN\}}
   \label{fig:input_matrix_B}
 \end{figure}
 
 
-\subsection{Output Tensor, a.k.a.  feature image}
+\subsubsection{Output Tensor}
 
-\Fig \ref{fig:output_tensor} shows the output tensor.
+The output tensor is flattened into a matrix as shown in
+\Fig \ref{fig:output_tensor_to_matrix_C}.
+The n, ho, wo dimensions in the tensor are merged to form the gemmM dimension
+in the matrix.
+The k dimension in the tensor is passed through as the gemmN dimension in
+the matrix.
 
 %\tikzexternaldisable
-\tikzsetnextfilename{output_tensor}
+\tikzsetnextfilename{output_tensor_to_matrix_C}
 \begin{figure}[!h]
   \centering
-  \begin{tikzpicture}
-    \def\firstCol{magenta}
-    \def\secondCol{teal!50!gray}
-    \def\thirdCol{olive}
-    \def\unitTensor{0.3}
-    \coordinate (outputTensorTL) at (0,0);
-    \coordinate (TL) at (outputTensorTL);
-    \outputTensor{4}{4}{10}{\unitTensor}{1}{10}
-  \end{tikzpicture}
-  \caption{Output tensor O\{n,k,ho,wo\}}
-  \label{fig:output_tensor}
-\end{figure}
+  \includegraphics[width=\textwidth]{output_tensor_to_matrix_C}
+  % \begin{tikzpicture}
+  %   \def\firstCol{magenta}
+  %   \def\secondCol{teal!50!gray}
+  %   \def\thirdCol{olive}
+  %   \def\unitTensor{0.3}
+  %   \coordinate (outputTensorTL) at (0,0);
+  %   \coordinate (TL) at (outputTensorTL);
+  %   \outputTensor{4}{4}{10}{\unitTensor}{1}{10}
 
-The output tensor is flattened into a matrix as shown in \Fig \ref{fig:output_matrix_C}.
-%\tikzexternaldisable
-\tikzsetnextfilename{output_matrix_C}
-\begin{figure}[!h]
-  \centering
-  \begin{tikzpicture}[scale=.9]
-    \def\firstCol{magenta}
-    \def\secondCol{teal!50!gray}
-    \def\thirdCol{olive}
-    \def\unitMatrix{0.3}
-    \coordinate (outputMatrixTL) at (0,0);
-    \coordinate (TL) at (outputMatrixTL);
-    \outputGemmC{10}{60}{4}{4}{\unitMatrix}{10}{.9}
-  \end{tikzpicture}
-  \caption{Output matrix C\{gemmM,gemmN\}}
-  \label{fig:output_matrix_C}
+  %   %% output gemm C
+  %   \def\unitMatrix{0.3}
+  %   \coordinate (outputMatrixTL) at ($(outputTensorTL)+(14,1)$);
+  %   \coordinate (TL) at (outputMatrixTL);
+  %   \outputGemmC{10}{60}{4}{4}{\unitMatrix}{10}{1}
+  % \end{tikzpicture}
+  \caption{Output tensor O\{n,k,ho,wo\} to matrix C\{gemmM,gemmN\}}
+  \label{fig:output_tensor_to_matrix_C}
 \end{figure}
 
 
-\subsection{ConvToGemm}
+%\tikzexternaldisable
+% \tikzsetnextfilename{output_matrix_C}
+% \begin{figure}[!h]
+%   \centering
+%   \begin{tikzpicture}[scale=.9]
+%     \def\firstCol{magenta}
+%     \def\secondCol{teal!50!gray}
+%     \def\thirdCol{olive}
+%     \def\unitMatrix{0.3}
+%     \coordinate (outputMatrixTL) at (0,0);
+%     \coordinate (TL) at (outputMatrixTL);
+%     \outputGemmC{10}{60}{4}{4}{\unitMatrix}{10}{1}
+    
+%   \end{tikzpicture}
+%   \caption{Output matrix C\{gemmM,gemmN\}}
+%   \label{fig:output_matrix_C}
+% \end{figure}
+
+
+\subsubsection{The Transformed Gemm}
 
 The forward convolution is converted into a gemm as shown in
 \Fig \ref{fig:conv2d_GEMM}.
@@ -258,180 +320,180 @@ The forward convolution is converted into a gemm as shown in
 \tikzsetnextfilename{conv2d_gemm}
 \begin{figure}[!h]
   \centering
-  \begin{tikzpicture}[scale=.7]
-    %% filter matrix
-    \def\firstCol{red}
-    \def\secondCol{gray}
-    \def\thirdCol{brown}
-    \def\unitMatrix{0.25}
-    \coordinate (filterGemmTL) at (0,0);
-    \coordinate (TL) at (filterGemmTL);
-    \filterGemmA{3}{3}{3}{10}{\unitMatrix}{.7}
-    %\pickElemInMatrix{1}{20}{\unitMatrix}
+  \includegraphics[width=.9\textwidth]{conv2d_gemm}
+  % \begin{tikzpicture}[scale=.7]
+  %   %% filter matrix
+  %   \def\firstCol{red}
+  %   \def\secondCol{gray}
+  %   \def\thirdCol{brown}
+  %   \def\unitMatrix{0.25}
+  %   \coordinate (filterGemmTL) at (0,0);
+  %   \coordinate (TL) at (filterGemmTL);
+  %   \filterGemmA{3}{3}{3}{10}{\unitMatrix}{.7}
+  %   %\pickElemInMatrix{1}{20}{\unitMatrix}
 
-    %% input matrix
-    \def\firstCol{purple}
-    \def\secondCol{blue!50!gray}
-    \def\thirdCol{orange}
-    \coordinate (inputGemmTL) at (7.5,9);
-    \coordinate (TL) at (inputGemmTL);
-    \inputGemmB{3}{3}{3}{60}{4}{4}{\unitMatrix}{.7}
+  %   %% input matrix
+  %   \def\firstCol{purple}
+  %   \def\secondCol{blue!50!gray}
+  %   \def\thirdCol{orange}
+  %   \coordinate (inputGemmTL) at (7.5,9);
+  %   \coordinate (TL) at (inputGemmTL);
+  %   \inputGemmB{3}{3}{3}{60}{4}{4}{\unitMatrix}{.7}
 
-    %% output matrix
-    \def\firstCol{magenta}
-    \def\secondCol{teal!50!gray}
-    \def\thirdCol{olive}
-    \coordinate (outputGemmTL) at (7.5,0);
-    \coordinate (TL) at (outputGemmTL);
-    \outputGemmC{10}{60}{4}{4}{\unitMatrix}{10}{.7}
+  %   %% output matrix
+  %   \def\firstCol{magenta}
+  %   \def\secondCol{teal!50!gray}
+  %   \def\thirdCol{olive}
+  %   \coordinate (outputGemmTL) at (7.5,0);
+  %   \coordinate (TL) at (outputGemmTL);
+  %   \outputGemmC{10}{60}{4}{4}{\unitMatrix}{10}{.7}
 
-    %% labels
-    \node [scale=1.5,right] at ($(filterGemmTL)+(0,-4)$) {Filter Matrix A};
-    \node [scale=1.5,right] at ($(inputGemmTL)+(0,1.5)$) {Input Matrix B};
-    \node [scale=1.5,right] at ($(outputGemmTL)+(0,-4)$) {Output Matrix C};
-  \end{tikzpicture}
+  %   %% labels
+  %   \node [scale=1.5,right] at ($(filterGemmTL)+(0,-4)$) {Filter Matrix A};
+  %   \node [scale=1.5,right] at ($(inputGemmTL)+(0,1.5)$) {Input Matrix B};
+  %   \node [scale=1.5,right] at ($(outputGemmTL)+(0,-4)$) {Output Matrix C};
+  % \end{tikzpicture}
   \caption{GEMM for conv2d}
   \label{fig:conv2d_GEMM}
 \end{figure}
 
 
-
-\section{Backward Weight Convolution, i.e. $\frac{\partial \bold{L}}{\partial \bold{F}}$}
+\subsection{Backward Weight Convolution, i.e. $\partial \bold{L}/\partial \bold{F}$}
 The backward weight convolution refers to the step to compute $\partial \bold{L}/\partial \bold{F}$
-during backpropagation.
-As shown in \Fig \ref{fig:conv2d_bwd_weight}, each image in the input batch is convoluted
+during back-propagation.
+As shown in \Fig \ref{fig:conv2d_bwd_weight_gemm}, each image in the input batch is convoluted
 with its corresponding output image to produce one filter.
 And all the filters are summed to produce the final filter gradient $\partial \bold{L}/\partial \bold{F}$.
 
-The transformation of input, filter, and output tensors into matrices is very similar in
+The transformations of input, filter, and output tensors into matrices are very similar to
 the forward convolution case.
-The only difference is that some matrices need to be transposed as shown in
-\Fig \ref{fig:output_matrix_A_conv2d_bwd_weight}, \ref{fig:input_matrix_B_con2d_bwd_weight},
-and \ref{fig:filter_matrix_C}.
+The only difference is that some matrices need to be transposed.
+%\Fig \ref{fig:output_matrix_A_conv2d_bwd_weight}, \ref{fig:input_matrix_B_con2d_bwd_weight},
+%and \ref{fig:filter_matrix_C}.
 
 %\tikzexternaldisable
-\tikzsetnextfilename{conv2d_bwd_weight}
-\begin{figure}[!h]
-  \centering
-  \begin{tikzpicture}
-    \def\unitTensor{0.3}
+% \tikzsetnextfilename{conv2d_bwd_weight}
+% \begin{figure}[!h]
+%   \centering
+%   \begin{tikzpicture}
+%     \def\unitTensor{0.3}
 
-    \def\firstInputCol{purple}
-    \def\secondInputCol{blue!50!gray}
-    \def\thirdInputCol{orange}
+%     \def\firstInputCol{purple}
+%     \def\secondInputCol{blue!50!gray}
+%     \def\thirdInputCol{orange}
     
-    %% input tensor
-    \def\firstCol{\firstInputCol}
-    \def\secondCol{\secondInputCol}
-    \def\thirdCol{\thirdInputCol}
-    \coordinate (inputTensorTL) at (0,0);
-    \coordinate (TL) at (inputTensorTL);
-    \inputTensor{8}{8}{3}{\unitTensor}{hi}{wi}{30}
+%     %% input tensor
+%     \def\firstCol{\firstInputCol}
+%     \def\secondCol{\secondInputCol}
+%     \def\thirdCol{\thirdInputCol}
+%     \coordinate (inputTensorTL) at (0,0);
+%     \coordinate (TL) at (inputTensorTL);
+%     \inputTensor{8}{8}{3}{\unitTensor}{hi}{wi}{30}
 
-    %% output tensor
-    \def\firstCol{magenta}
-    \def\secondCol{teal!50!gray}
-    \def\thirdCol{olive}
-    \def\unitTensor{0.3}
-    \coordinate (outputTensorTL) at (0, -6);
-    \coordinate (TL) at (outputTensorTL);
-    \outputTensor{4}{4}{10}{\unitTensor}{1}{10}
+%     %% output tensor
+%     \def\firstCol{magenta}
+%     \def\secondCol{teal!50!gray}
+%     \def\thirdCol{olive}
+%     \def\unitTensor{0.3}
+%     \coordinate (outputTensorTL) at (0, -6);
+%     \coordinate (TL) at (outputTensorTL);
+%     \outputTensor{4}{4}{10}{\unitTensor}{1}{10}
 
 
-    \draw [ultra thick, \firstInputCol, ->,>=stealth] ($(firstBR)+(-4*\unitTensor,-.8)$) -- ++(0, -1.5) node [above, pos=.5, sloped, scale=1.2, black] {conv};
-    \draw [ultra thick, \secondInputCol, ->,>=stealth] ($(secondmidB)+(0,-.5)$) -- ++(0, -1.8) node [above, pos=.5, sloped, scale=1.2, black] {conv};
-    \draw [ultra thick, \thirdInputCol, ->,>=stealth] ($(thirdBL)+(4*\unitTensor,-.5)$) -- ++(0, -1.8) node [above, pos=.5, sloped, scale=1.2, black] {conv};
+%     \draw [ultra thick, \firstInputCol, ->,>=stealth] ($(firstBR)+(-4*\unitTensor,-.8)$) -- ++(0, -1.5) node [above, pos=.5, sloped, scale=1.2, black] {conv};
+%     \draw [ultra thick, \secondInputCol, ->,>=stealth] ($(secondmidB)+(0,-.5)$) -- ++(0, -1.8) node [above, pos=.5, sloped, scale=1.2, black] {conv};
+%     \draw [ultra thick, \thirdInputCol, ->,>=stealth] ($(thirdBL)+(4*\unitTensor,-.5)$) -- ++(0, -1.8) node [above, pos=.5, sloped, scale=1.2, black] {conv};
 
-    %% filter tensor
-    \def\firstCol{red}
-    \def\secondCol{gray}
-    \def\thirdCol{brown}
-    \coordinate (filterTensorTL) at (-4,-10);
-    \coordinate (TL) at (filterTensorTL);
-    \filterTensor{3}{3}{3}{\unitTensor}{30}
-    \draw [ultra thick, ->, >=stealth, \firstInputCol] ($(midB1)+(0, -.5)$) -- (labelK);
+%     %% filter tensor
+%     \def\firstCol{red}
+%     \def\secondCol{gray}
+%     \def\thirdCol{brown}
+%     \coordinate (filterTensorTL) at (-4,-10);
+%     \coordinate (TL) at (filterTensorTL);
+%     \filterTensor{3}{3}{3}{\unitTensor}{30}
+%     \draw [ultra thick, ->, >=stealth, \firstInputCol] ($(midB1)+(0, -.5)$) -- (labelK);
 
-    \coordinate (TL) at ($(TL)+(6,0)$);
-    \filterTensor{3}{3}{3}{\unitTensor}{30}
-    \draw [ultra thick, ->, >=stealth, \secondInputCol] ($(midB2)+(0, -.2)$) -- (labelK);
+%     \coordinate (TL) at ($(TL)+(6,0)$);
+%     \filterTensor{3}{3}{3}{\unitTensor}{30}
+%     \draw [ultra thick, ->, >=stealth, \secondInputCol] ($(midB2)+(0, -.2)$) -- (labelK);
     
-    \coordinate (TL) at ($(TL)+(7,0)$);
-    \filterTensor{3}{3}{3}{\unitTensor}{30}
-    \draw [ultra thick, ->, >=stealth, \thirdInputCol] ($(midB3)+(0, -.2)$) -- (labelK);
-    \node [left, scale=2] at ($(TL)+(-.5, -1.5*\unitTensor)$) {$\cdots$};
+%     \coordinate (TL) at ($(TL)+(7,0)$);
+%     \filterTensor{3}{3}{3}{\unitTensor}{30}
+%     \draw [ultra thick, ->, >=stealth, \thirdInputCol] ($(midB3)+(0, -.2)$) -- (labelK);
+%     \node [left, scale=2] at ($(TL)+(-.5, -1.5*\unitTensor)$) {$\cdots$};
 
-    \coordinate (filterTensorTL) at (3,-14);
-    \coordinate (TL) at (filterTensorTL);
-    \filterTensor{3}{3}{3}{\unitTensor}{30}
-    \draw [ultra thick, <-, >=stealth] (labelK) -- ++(0, 1.5)
-    node [pos=.5, right, scale=1.2] {sum};
+%     \coordinate (filterTensorTL) at (3,-14);
+%     \coordinate (TL) at (filterTensorTL);
+%     \filterTensor{3}{3}{3}{\unitTensor}{30}
+%     \draw [ultra thick, <-, >=stealth] (labelK) -- ++(0, 1.5)
+%     node [pos=.5, right, scale=1.2] {sum};
 
-    %% Adding labels
-    \node [scale=1.5, below left] at ($(inputTensorTL)+(-1.5,0)$) {Input Tensor};
-    \node [scale=1.5, below left, align=center] at ($(filterTensorTL)+(-1.5,0)$)
-    {Filter Loss\\
-      Gradient $\bold{\frac{\partial L}{\partial F}}$};
-    \node [scale=1.5, below left, align=center] at ($(outputTensorTL)+(-1.5,0)$)
-    {Output Loss\\
-      Gradient $\bold{\frac{\partial L}{\partial O}}$};
+%     %% Adding labels
+%     \node [scale=1.5, below left] at ($(inputTensorTL)+(-1.5,0)$) {Input Tensor};
+%     \node [scale=1.5, below left, align=center] at ($(filterTensorTL)+(-1.5,0)$)
+%     {Filter Loss\\
+%       Gradient $\bold{\frac{\partial L}{\partial F}}$};
+%     \node [scale=1.5, below left, align=center] at ($(outputTensorTL)+(-1.5,0)$)
+%     {Output Loss\\
+%       Gradient $\bold{\frac{\partial L}{\partial O}}$};
     
-  \end{tikzpicture}
-  \caption{Backward Weight Convolution}
-  \label{fig:conv2d_bwd_weight}
-\end{figure}
+%   \end{tikzpicture}
+%   \caption{Backward weight convolution diagram}
+%   \label{fig:conv2d_bwd_weight}
+% \end{figure}
 
 % \tikzexternaldisable
-\tikzsetnextfilename{output_matrix_A_conv2d_bwd_weight}
-\begin{figure}[!h]
-  \centering
-  \begin{tikzpicture}[scale=.9]
-    \def\firstCol{magenta}
-    \def\secondCol{teal!50!gray}
-    \def\thirdCol{olive}
-    \def\unitMatrix{0.3}
-    \coordinate (outputMatrixTL) at (0,0);
-    \coordinate (TL) at (outputMatrixTL);
-    \outputGemmA{10}{60}{4}{4}{\unitMatrix}{10}{.9}
-  \end{tikzpicture}
-  \caption{Output matrix A\{gemmM,gemmK\} for conv2d\_bwd\_weight}
-  \label{fig:output_matrix_A_conv2d_bwd_weight}
-\end{figure}
+% \tikzsetnextfilename{output_matrix_A_conv2d_bwd_weight}
+% \begin{figure}[!h]
+%   \centering
+%   \begin{tikzpicture}[scale=.9]
+%     \def\firstCol{magenta}
+%     \def\secondCol{teal!50!gray}
+%     \def\thirdCol{olive}
+%     \def\unitMatrix{0.3}
+%     \coordinate (outputMatrixTL) at (0,0);
+%     \coordinate (TL) at (outputMatrixTL);
+%     \outputGemmA{10}{60}{4}{4}{\unitMatrix}{10}{.9}
+%   \end{tikzpicture}
+%   \caption{Output matrix A\{gemmM,gemmK\} for conv2d\_bwd\_weight}
+%   \label{fig:output_matrix_A_conv2d_bwd_weight}
+% \end{figure}
 
-%\tikzexternaldisable
-\tikzsetnextfilename{input_matrix_B_conv2d_bwd_weight}
-\begin{figure}[!h]
-  \centering
-  \begin{tikzpicture}
-    \def\firstCol{purple}
-    \def\secondCol{blue!50!gray}
-    \def\thirdCol{orange}
-    \coordinate (inputGemmTL) at (0,0);
-    \coordinate (TL) at (inputGemmTL);
-    \inputGemmBBwdWeight{3}{3}{3}{60}{4}{4}{0.25}{1}
-  \end{tikzpicture}
-  \caption{Input matrix B\{gemmK,gemmN\} for conv2d\_bwd\_weight}
-  \label{fig:input_matrix_B_con2d_bwd_weight}
-\end{figure}
+% %\tikzexternaldisable
+% \tikzsetnextfilename{input_matrix_B_conv2d_bwd_weight}
+% \begin{figure}[!h]
+%   \centering
+%   \begin{tikzpicture}
+%     \def\firstCol{purple}
+%     \def\secondCol{blue!50!gray}
+%     \def\thirdCol{orange}
+%     \coordinate (inputGemmTL) at (0,0);
+%     \coordinate (TL) at (inputGemmTL);
+%     \inputGemmBBwdWeight{3}{3}{3}{60}{4}{4}{0.25}{1}
+%   \end{tikzpicture}
+%   \caption{Input matrix B\{gemmK,gemmN\} for conv2d\_bwd\_weight}
+%   \label{fig:input_matrix_B_con2d_bwd_weight}
+% \end{figure}
 
-%\tikzexternaldisable
-\tikzsetnextfilename{filter_matrix_C}
-\begin{figure}[!h]
-  \centering
-  \begin{tikzpicture}
-    \def\firstCol{red}
-    \def\secondCol{gray}
-    \def\thirdCol{brown}
-    \def\unitMatrix{0.25}
-    \coordinate (TL) at (0,0);
-    \filterGemmC{3}{3}{3}{10}{\unitMatrix}{1}
-    %\pickElemInMatrix{1}{20}{\unitMatrix}
-  \end{tikzpicture}
-  \caption{Filter matrix C\{gemmM,gemmN\}}
-  \label{fig:filter_matrix_C}
-\end{figure}
+% %\tikzexternaldisable
+% \tikzsetnextfilename{filter_matrix_C}
+% \begin{figure}[!h]
+%   \centering
+%   \begin{tikzpicture}
+%     \def\firstCol{red}
+%     \def\secondCol{gray}
+%     \def\thirdCol{brown}
+%     \def\unitMatrix{0.25}
+%     \coordinate (TL) at (0,0);
+%     \filterGemmC{3}{3}{3}{10}{\unitMatrix}{1}
+%     %\pickElemInMatrix{1}{20}{\unitMatrix}
+%   \end{tikzpicture}
+%   \caption{Filter matrix C\{gemmM,gemmN\}}
+%   \label{fig:filter_matrix_C}
+% \end{figure}
 
 
-\subsection{ConvToGemm}
+%\subsubsection{ConvToGemm}
 
 \Fig \ref{fig:conv2d_bwd_weight_gemm} shows the transformed gemm from backward weight
 convolution.
@@ -445,39 +507,46 @@ can be updated correctly.
 \tikzsetnextfilename{conv2d_bwd_weight_gemm}
 \begin{figure}[!h]
   \centering
-  \begin{tikzpicture}[scale=.7]
-    %% output matrix
-    \def\firstCol{magenta}
-    \def\secondCol{teal!50!gray}
-    \def\thirdCol{olive}
-    \def\unitMatrix{0.25}
-    \coordinate (outputGemmTL) at (0,0);
-    \coordinate (TL) at (outputGemmTL);
-    \outputGemmA{10}{60}{4}{4}{\unitMatrix}{10}{.7}
+  \includegraphics[width=\textwidth]{conv2d_bwd_weight_gemm}
+  % \begin{tikzpicture}[scale=.7]
+  %   %% output matrix
+  %   \def\firstCol{magenta}
+  %   \def\secondCol{teal!50!gray}
+  %   \def\thirdCol{olive}
+  %   \def\unitMatrix{0.25}
+  %   \coordinate (outputGemmTL) at (0,0);
+  %   \coordinate (TL) at (outputGemmTL);
+  %   \outputGemmA{10}{60}{4}{4}{\unitMatrix}{10}{.7}
 
-    %% Input matrix
-    \def\firstCol{purple}
-    \def\secondCol{blue!50!gray}
-    \def\thirdCol{orange}
-    \coordinate (inputGemmTL) at (16,17);
-    \coordinate (TL) at (inputGemmTL);
-    \inputGemmBBwdWeight{3}{3}{3}{60}{4}{4}{\unitMatrix}{.7}
+  %   %% Input matrix
+  %   \def\firstCol{purple}
+  %   \def\secondCol{blue!50!gray}
+  %   \def\thirdCol{orange}
+  %   \coordinate (inputGemmTL) at (16,17);
+  %   \coordinate (TL) at (inputGemmTL);
+  %   \inputGemmBBwdWeight{3}{3}{3}{60}{4}{4}{\unitMatrix}{.7}
 
-    %% Filter matrix
-    \def\firstCol{red}
-    \def\secondCol{gray}
-    \def\thirdCol{brown}
-    \coordinate (filterGemmTL) at (16,0);
-    \coordinate (TL) at (filterGemmTL);
-    \filterGemmC{3}{3}{3}{10}{\unitMatrix}{.7}
+  %   %% Filter matrix
+  %   \def\firstCol{red}
+  %   \def\secondCol{gray}
+  %   \def\thirdCol{brown}
+  %   \coordinate (filterGemmTL) at (16,0);
+  %   \coordinate (TL) at (filterGemmTL);
+  %   \filterGemmC{3}{3}{3}{10}{\unitMatrix}{.7}
 
-    %% labels
-    \node [scale=1.5,right] at ($(outputGemmTL)+(0,-4)$) {Output Matrix A};
-    \node [scale=1.5,left] at ($(inputGemmTL)+(0,-2)$) {Input Matrix B};
-    \node [scale=1.5,right] at ($(filterGemmTL)+(0,-4)$) {Filter Matrix C};
-    
-  \end{tikzpicture}
-  \caption{GEMM for conv2d\_bwd\_weight}
+  %   %% labels
+  %   \node [scale=1.5,right] at ($(outputGemmTL)+(0,-4)$) {Output Matrix A};
+  %   \node [scale=1.5,above] at ($(inputGemmTL)+(3,1.5)$) {Input Matrix B};
+  %   \node [scale=1.5,right] at ($(filterGemmTL)+(0,-4)$) {Filter Matrix C};
+
+  %   %% Insert the conv2d_bwd_weight diagram as an image
+  %   \node [draw=black, above right, align=center] at (-2,3) {
+  %     backward weight convolution\\
+  %     \includegraphics[width=.6\textwidth]{conv2d_bwd_weight}
+  %   };
+
+  % \end{tikzpicture}
+  \caption{Conversion from conv2d\_bwd\_weight to gemm.}
   \label{fig:conv2d_bwd_weight_gemm}
 \end{figure}
 
@@ -527,233 +596,245 @@ can be updated correctly.
 %   \label{fig:input_tensor}
 % \end{figure}
 
-\section{Backward Data, i.e. $\frac{\partial \bold{L}}{\partial \bold{X}}$}
-Using the chain rule, we can have
-\begin{equation}\label{eq:chain_rule_for_X}
-  \frac{\partial \bold{L}}{\partial \bold{X}} = \frac{\partial \bold{L}}{\partial \bold{O}} \times \frac{\partial \bold{O}}{\partial \bold{X}}
-\end{equation}
-$\partial \bold{L}/\partial \bold{O}$ is the loss gradient from the previous layer.
+\subsection{Backward Data, i.e. $\partial \bold{L}/\partial \bold{X}$}
+We use the v4r1 algorithm to implement the backward data convolution.
+\hl{TODO: Understand and explain the algorithm.}
+
+% Using the chain rule, we can have
+% \begin{equation}\label{eq:chain_rule_for_X}
+%   \frac{\partial \bold{L}}{\partial \bold{X}} = \frac{\partial \bold{L}}{\partial \bold{O}} \times \frac{\partial \bold{O}}{\partial \bold{X}}
+% \end{equation}
+% $\partial \bold{L}/\partial \bold{O}$ is the loss gradient from the previous layer.
 
 
-%\tikzexternaldisable
-\tikzsetnextfilename{2d_fwd_conv_simple}
-\begin{figure}[!h]
-  \centering
-  \begin{tikzpicture}
-    \def\cellUnit{0.8}
-    \coordinate (TL) at (0,0);
-    \drawMatrix{4}{4}{\cellUnit}{X}{0}{1}
-    \coordinate (labelInput) at ($(TL)+(2*\cellUnit, -4.5*\cellUnit)$);
-    \coordinate (labelFilter) at ($(labelInput)+(5*\cellUnit, 0)$);
-    \coordinate (labelOutput) at ($(labelFilter)+(4.5*\cellUnit, 0)$);
+% %\tikzexternaldisable
+% \tikzsetnextfilename{2d_fwd_conv_simple}
+% \begin{figure}[!h]
+%   \centering
+%   \begin{tikzpicture}
+%     \def\cellUnit{0.8}
+%     \coordinate (TL) at (0,0);
+%     \drawMatrix{4}{4}{\cellUnit}{X}{0}{1}
+%     \coordinate (labelInput) at ($(TL)+(2*\cellUnit, -4.5*\cellUnit)$);
+%     \coordinate (labelFilter) at ($(labelInput)+(5*\cellUnit, 0)$);
+%     \coordinate (labelOutput) at ($(labelFilter)+(4.5*\cellUnit, 0)$);
 
-    \draw [ultra thick, ->, >=stealth, white] ($(TL)+(4*\cellUnit+.1, -2*\cellUnit)$)
-    -- ++(2*\cellUnit-.2, 0) node [pos=.5, black] {conv};
+%     \draw [ultra thick, ->, >=stealth, white] ($(TL)+(4*\cellUnit+.1, -2*\cellUnit)$)
+%     -- ++(2*\cellUnit-.2, 0) node [pos=.5, black] {conv};
 
-    \coordinate (TL) at ($(TL)+(6*\cellUnit,-\cellUnit)$);
-    \drawMatrix{2}{2}{\cellUnit}{F}{0}{1}
+%     \coordinate (TL) at ($(TL)+(6*\cellUnit,-\cellUnit)$);
+%     \drawMatrix{2}{2}{\cellUnit}{F}{0}{1}
 
-    \draw [ultra thick, ->, >=stealth, white] ($(TL)+(2*\cellUnit+.1, -1*\cellUnit)$)
-    -- ++(2*\cellUnit-.2, 0) node [pos=.5, scale=1.5, black] {=};
+%     \draw [ultra thick, ->, >=stealth, white] ($(TL)+(2*\cellUnit+.1, -1*\cellUnit)$)
+%     -- ++(2*\cellUnit-.2, 0) node [pos=.5, scale=1.5, black] {=};
 
-    \coordinate (TL) at ($(TL)+(4*\cellUnit,0.5*\cellUnit)$);
-    \drawMatrix{3}{3}{\cellUnit}{O}{0}{1}
+%     \coordinate (TL) at ($(TL)+(4*\cellUnit,0.5*\cellUnit)$);
+%     \drawMatrix{3}{3}{\cellUnit}{O}{0}{1}
 
-    %% labels
-    \node [scale=1.5] at (labelInput) {Input};
-    \node [scale=1.5] at (labelFilter) {Filter};
-    \node [scale=1.5] at (labelOutput) {Output};
-  \end{tikzpicture}
-  \caption{Forward convolution without considering channels. stride = dilation = 1}
-  \label{fig:2d_fwd_conv_simple}
-\end{figure}
+%     %% labels
+%     \node [scale=1.5] at (labelInput) {Input};
+%     \node [scale=1.5] at (labelFilter) {Filter};
+%     \node [scale=1.5] at (labelOutput) {Output};
+%   \end{tikzpicture}
+%   \caption{Forward convolution without considering channels. stride = dilation = 1}
+%   \label{fig:2d_fwd_conv_simple}
+% \end{figure}
 
-\Fig \ref{fig:2d_fwd_conv_simple} shows a very simple illustration of a forward convolution.
+% \Fig \ref{fig:2d_fwd_conv_simple} shows a very simple illustration of a forward convolution.
 
-\begin{align}\label{eq:conv2d_fwd_output}
-  \bold{O}_{11} & = \bold{X}_{11} \times \bold{F}_{11} + \bold{X}_{12} \times \bold{F}_{12}
-                  + \bold{X}_{21} \times \bold{F}_{21} + \bold{X}_{22} \times \bold{F}_{22} \\
-  \bold{O}_{12} & = \bold{X}_{12} \times \bold{F}_{11} + \bold{X}_{13} \times \bold{F}_{12}
-                  + \bold{X}_{22} \times \bold{F}_{21} + \bold{X}_{23} \times \bold{F}_{22} \\
-  \bold{O}_{13} & = \bold{X}_{13} \times \bold{F}_{11} + \bold{X}_{14} \times \bold{F}_{12}
-                  + \bold{X}_{23} \times \bold{F}_{21} + \bold{X}_{24} \times \bold{F}_{22} \\
-  \bold{O}_{21} & = \bold{X}_{21} \times \bold{F}_{11} + \bold{X}_{22} \times \bold{F}_{12}
-                  + \bold{X}_{31} \times \bold{F}_{21} + \bold{X}_{32} \times \bold{F}_{22} \\
-  \bold{O}_{22} & = \bold{X}_{22} \times \bold{F}_{11} + \bold{X}_{23} \times \bold{F}_{12}
-                  + \bold{X}_{32} \times \bold{F}_{21} + \bold{X}_{33} \times \bold{F}_{22}\\
-  \bold{O}_{23} & = \bold{X}_{23} \times \bold{F}_{11} + \bold{X}_{24} \times \bold{F}_{12}
-                  + \bold{X}_{33} \times \bold{F}_{21} + \bold{X}_{34} \times \bold{F}_{22}\\
-  \bold{O}_{31} & = \bold{X}_{31} \times \bold{F}_{11} + \bold{X}_{32} \times \bold{F}_{12}
-                  + \bold{X}_{41} \times \bold{F}_{21} + \bold{X}_{42} \times \bold{F}_{22}\\
-  \bold{O}_{32} & = \bold{X}_{32} \times \bold{F}_{11} + \bold{X}_{33} \times \bold{F}_{12}
-                  + \bold{X}_{42} \times \bold{F}_{21} + \bold{X}_{43} \times \bold{F}_{22}\\
-  \bold{O}_{33} & = \bold{X}_{33} \times \bold{F}_{11} + \bold{X}_{34} \times \bold{F}_{12}
-                   + \bold{X}_{43} \times \bold{F}_{21} + \bold{X}_{44} \times \bold{F}_{22}
-\end{align}
+% \begin{align}\label{eq:conv2d_fwd_output}
+%   \bold{O}_{11} & = \bold{X}_{11} \times \bold{F}_{11} + \bold{X}_{12} \times \bold{F}_{12}
+%                   + \bold{X}_{21} \times \bold{F}_{21} + \bold{X}_{22} \times \bold{F}_{22} \\
+%   \bold{O}_{12} & = \bold{X}_{12} \times \bold{F}_{11} + \bold{X}_{13} \times \bold{F}_{12}
+%                   + \bold{X}_{22} \times \bold{F}_{21} + \bold{X}_{23} \times \bold{F}_{22} \\
+%   \bold{O}_{13} & = \bold{X}_{13} \times \bold{F}_{11} + \bold{X}_{14} \times \bold{F}_{12}
+%                   + \bold{X}_{23} \times \bold{F}_{21} + \bold{X}_{24} \times \bold{F}_{22} \\
+%   \bold{O}_{21} & = \bold{X}_{21} \times \bold{F}_{11} + \bold{X}_{22} \times \bold{F}_{12}
+%                   + \bold{X}_{31} \times \bold{F}_{21} + \bold{X}_{32} \times \bold{F}_{22} \\
+%   \bold{O}_{22} & = \bold{X}_{22} \times \bold{F}_{11} + \bold{X}_{23} \times \bold{F}_{12}
+%                   + \bold{X}_{32} \times \bold{F}_{21} + \bold{X}_{33} \times \bold{F}_{22}\\
+%   \bold{O}_{23} & = \bold{X}_{23} \times \bold{F}_{11} + \bold{X}_{24} \times \bold{F}_{12}
+%                   + \bold{X}_{33} \times \bold{F}_{21} + \bold{X}_{34} \times \bold{F}_{22}\\
+%   \bold{O}_{31} & = \bold{X}_{31} \times \bold{F}_{11} + \bold{X}_{32} \times \bold{F}_{12}
+%                   + \bold{X}_{41} \times \bold{F}_{21} + \bold{X}_{42} \times \bold{F}_{22}\\
+%   \bold{O}_{32} & = \bold{X}_{32} \times \bold{F}_{11} + \bold{X}_{33} \times \bold{F}_{12}
+%                   + \bold{X}_{42} \times \bold{F}_{21} + \bold{X}_{43} \times \bold{F}_{22}\\
+%   \bold{O}_{33} & = \bold{X}_{33} \times \bold{F}_{11} + \bold{X}_{34} \times \bold{F}_{12}
+%                    + \bold{X}_{43} \times \bold{F}_{21} + \bold{X}_{44} \times \bold{F}_{22}
+% \end{align}
 
-Local gradients for X is
+% Local gradients for X is
 
-\begin{align}\label{eq:local_gradients_X}
-  \frac{\partial \bold{O}_{11}}{\partial \bold{X}_{11}} = \bold{F}_{11}\;\;\;\;
-  \frac{\partial \bold{O}_{11}}{\partial \bold{X}_{12}} = \bold{F}_{12}\;\;\;\;
-  \frac{\partial \bold{O}_{11}}{\partial \bold{X}_{21}} = \bold{F}_{21}\;\;\;\;
-  \frac{\partial \bold{O}_{11}}{\partial \bold{X}_{22}} = \bold{F}_{22}\;\;\;\;\\
-  \frac{\partial \bold{O}_{12}}{\partial \bold{X}_{12}} = \bold{F}_{11}\;\;\;\;
-  \frac{\partial \bold{O}_{12}}{\partial \bold{X}_{13}} = \bold{F}_{12}\;\;\;\;
-  \frac{\partial \bold{O}_{12}}{\partial \bold{X}_{22}} = \bold{F}_{21}\;\;\;\;
-  \frac{\partial \bold{O}_{12}}{\partial \bold{X}_{23}} = \bold{F}_{22}\;\;\;\;\\
-  \frac{\partial \bold{O}_{13}}{\partial \bold{X}_{13}} = \bold{F}_{11}\;\;\;\;
-  \frac{\partial \bold{O}_{13}}{\partial \bold{X}_{14}} = \bold{F}_{12}\;\;\;\;
-  \frac{\partial \bold{O}_{13}}{\partial \bold{X}_{23}} = \bold{F}_{21}\;\;\;\;
-  \frac{\partial \bold{O}_{13}}{\partial \bold{X}_{24}} = \bold{F}_{22}\;\;\;\;\\
-  \frac{\partial \bold{O}_{21}}{\partial \bold{X}_{21}} = \bold{F}_{11}\;\;\;\;
-  \frac{\partial \bold{O}_{21}}{\partial \bold{X}_{22}} = \bold{F}_{12}\;\;\;\;
-  \frac{\partial \bold{O}_{21}}{\partial \bold{X}_{31}} = \bold{F}_{21}\;\;\;\;
-  \frac{\partial \bold{O}_{21}}{\partial \bold{X}_{32}} = \bold{F}_{22}\;\;\;\;\\
-  \frac{\partial \bold{O}_{22}}{\partial \bold{X}_{22}} = \bold{F}_{11}\;\;\;\;
-  \frac{\partial \bold{O}_{22}}{\partial \bold{X}_{23}} = \bold{F}_{12}\;\;\;\;
-  \frac{\partial \bold{O}_{22}}{\partial \bold{X}_{32}} = \bold{F}_{21}\;\;\;\;
-  \frac{\partial \bold{O}_{22}}{\partial \bold{X}_{33}} = \bold{F}_{22}\;\;\;\;\\
-  \frac{\partial \bold{O}_{23}}{\partial \bold{X}_{23}} = \bold{F}_{11}\;\;\;\;
-  \frac{\partial \bold{O}_{23}}{\partial \bold{X}_{24}} = \bold{F}_{12}\;\;\;\;
-  \frac{\partial \bold{O}_{23}}{\partial \bold{X}_{33}} = \bold{F}_{21}\;\;\;\;
-  \frac{\partial \bold{O}_{23}}{\partial \bold{X}_{34}} = \bold{F}_{22}\;\;\;\;\\
-  \frac{\partial \bold{O}_{31}}{\partial \bold{X}_{31}} = \bold{F}_{11}\;\;\;\;
-  \frac{\partial \bold{O}_{31}}{\partial \bold{X}_{32}} = \bold{F}_{12}\;\;\;\;
-  \frac{\partial \bold{O}_{31}}{\partial \bold{X}_{41}} = \bold{F}_{21}\;\;\;\;
-  \frac{\partial \bold{O}_{31}}{\partial \bold{X}_{42}} = \bold{F}_{22}\;\;\;\;\\
-  \frac{\partial \bold{O}_{32}}{\partial \bold{X}_{32}} = \bold{F}_{11}\;\;\;\;
-  \frac{\partial \bold{O}_{32}}{\partial \bold{X}_{33}} = \bold{F}_{12}\;\;\;\;
-  \frac{\partial \bold{O}_{32}}{\partial \bold{X}_{42}} = \bold{F}_{21}\;\;\;\;
-  \frac{\partial \bold{O}_{32}}{\partial \bold{X}_{43}} = \bold{F}_{22}\;\;\;\;\\
-  \frac{\partial \bold{O}_{33}}{\partial \bold{X}_{33}} = \bold{F}_{11}\;\;\;\;
-  \frac{\partial \bold{O}_{33}}{\partial \bold{X}_{34}} = \bold{F}_{12}\;\;\;\;
-  \frac{\partial \bold{O}_{33}}{\partial \bold{X}_{43}} = \bold{F}_{21}\;\;\;\;
-  \frac{\partial \bold{O}_{33}}{\partial \bold{X}_{44}} = \bold{F}_{22}\;\;\;\;\\
-\end{align}
+% \begin{align}\label{eq:local_gradients_X}
+%   \frac{\partial \bold{O}_{11}}{\partial \bold{X}_{11}} = \bold{F}_{11}\;\;\;\;
+%   \frac{\partial \bold{O}_{11}}{\partial \bold{X}_{12}} = \bold{F}_{12}\;\;\;\;
+%   \frac{\partial \bold{O}_{11}}{\partial \bold{X}_{21}} = \bold{F}_{21}\;\;\;\;
+%   \frac{\partial \bold{O}_{11}}{\partial \bold{X}_{22}} = \bold{F}_{22}\;\;\;\;\\
+%   \frac{\partial \bold{O}_{12}}{\partial \bold{X}_{12}} = \bold{F}_{11}\;\;\;\;
+%   \frac{\partial \bold{O}_{12}}{\partial \bold{X}_{13}} = \bold{F}_{12}\;\;\;\;
+%   \frac{\partial \bold{O}_{12}}{\partial \bold{X}_{22}} = \bold{F}_{21}\;\;\;\;
+%   \frac{\partial \bold{O}_{12}}{\partial \bold{X}_{23}} = \bold{F}_{22}\;\;\;\;\\
+%   \frac{\partial \bold{O}_{13}}{\partial \bold{X}_{13}} = \bold{F}_{11}\;\;\;\;
+%   \frac{\partial \bold{O}_{13}}{\partial \bold{X}_{14}} = \bold{F}_{12}\;\;\;\;
+%   \frac{\partial \bold{O}_{13}}{\partial \bold{X}_{23}} = \bold{F}_{21}\;\;\;\;
+%   \frac{\partial \bold{O}_{13}}{\partial \bold{X}_{24}} = \bold{F}_{22}\;\;\;\;\\
+%   \frac{\partial \bold{O}_{21}}{\partial \bold{X}_{21}} = \bold{F}_{11}\;\;\;\;
+%   \frac{\partial \bold{O}_{21}}{\partial \bold{X}_{22}} = \bold{F}_{12}\;\;\;\;
+%   \frac{\partial \bold{O}_{21}}{\partial \bold{X}_{31}} = \bold{F}_{21}\;\;\;\;
+%   \frac{\partial \bold{O}_{21}}{\partial \bold{X}_{32}} = \bold{F}_{22}\;\;\;\;\\
+%   \frac{\partial \bold{O}_{22}}{\partial \bold{X}_{22}} = \bold{F}_{11}\;\;\;\;
+%   \frac{\partial \bold{O}_{22}}{\partial \bold{X}_{23}} = \bold{F}_{12}\;\;\;\;
+%   \frac{\partial \bold{O}_{22}}{\partial \bold{X}_{32}} = \bold{F}_{21}\;\;\;\;
+%   \frac{\partial \bold{O}_{22}}{\partial \bold{X}_{33}} = \bold{F}_{22}\;\;\;\;\\
+%   \frac{\partial \bold{O}_{23}}{\partial \bold{X}_{23}} = \bold{F}_{11}\;\;\;\;
+%   \frac{\partial \bold{O}_{23}}{\partial \bold{X}_{24}} = \bold{F}_{12}\;\;\;\;
+%   \frac{\partial \bold{O}_{23}}{\partial \bold{X}_{33}} = \bold{F}_{21}\;\;\;\;
+%   \frac{\partial \bold{O}_{23}}{\partial \bold{X}_{34}} = \bold{F}_{22}\;\;\;\;\\
+%   \frac{\partial \bold{O}_{31}}{\partial \bold{X}_{31}} = \bold{F}_{11}\;\;\;\;
+%   \frac{\partial \bold{O}_{31}}{\partial \bold{X}_{32}} = \bold{F}_{12}\;\;\;\;
+%   \frac{\partial \bold{O}_{31}}{\partial \bold{X}_{41}} = \bold{F}_{21}\;\;\;\;
+%   \frac{\partial \bold{O}_{31}}{\partial \bold{X}_{42}} = \bold{F}_{22}\;\;\;\;\\
+%   \frac{\partial \bold{O}_{32}}{\partial \bold{X}_{32}} = \bold{F}_{11}\;\;\;\;
+%   \frac{\partial \bold{O}_{32}}{\partial \bold{X}_{33}} = \bold{F}_{12}\;\;\;\;
+%   \frac{\partial \bold{O}_{32}}{\partial \bold{X}_{42}} = \bold{F}_{21}\;\;\;\;
+%   \frac{\partial \bold{O}_{32}}{\partial \bold{X}_{43}} = \bold{F}_{22}\;\;\;\;\\
+%   \frac{\partial \bold{O}_{33}}{\partial \bold{X}_{33}} = \bold{F}_{11}\;\;\;\;
+%   \frac{\partial \bold{O}_{33}}{\partial \bold{X}_{34}} = \bold{F}_{12}\;\;\;\;
+%   \frac{\partial \bold{O}_{33}}{\partial \bold{X}_{43}} = \bold{F}_{21}\;\;\;\;
+%   \frac{\partial \bold{O}_{33}}{\partial \bold{X}_{44}} = \bold{F}_{22}\;\;\;\;\\
+% \end{align}
 
-Let's set
-\begin{equation}
-  \frac{\partial \bold{L}}{\partial \bold{O}_{ij}} = \bold{L}_{ij}
-\end{equation}
-And we also have
-\begin{align}\label{eq:gradient_X}
-  \frac{\partial \bold{L}}{\partial \bold{X}_{ij}}=\sum_k\bold{L}_{k}\times\frac{\partial \bold{O}_k}{\partial \bold{X}_{ij}}
-\end{align}
+% Let's set
+% \begin{equation}
+%   \frac{\partial \bold{L}}{\partial \bold{O}_{ij}} = \bold{L}_{ij}
+% \end{equation}
+% And we also have
+% \begin{align}\label{eq:gradient_X}
+%   \frac{\partial \bold{L}}{\partial \bold{X}_{ij}}=\sum_k\bold{L}_{k}\times\frac{\partial \bold{O}_k}{\partial \bold{X}_{ij}}
+% \end{align}
 
-Then we can get the X gradient
+% Then we can get the X gradient
 
-\begin{align}
-  \frac{\partial \bold{L}}{\partial \bold{X}_{11}} &= \bold{L}_{11}\times \bold{F}_{11} \\
-  \frac{\partial \bold{L}}{\partial \bold{X}_{12}} &= \bold{L}_{11}\times \bold{F}_{12} +  \bold{L}_{12}\times \bold{F}_{11}\\
-  \frac{\partial \bold{L}}{\partial \bold{X}_{13}} &= \bold{L}_{12}\times \bold{F}_{12} +  \bold{L}_{13}\times \bold{F}_{11}\\
-  \frac{\partial \bold{L}}{\partial \bold{X}_{14}} &= \bold{L}_{13}\times \bold{F}_{12}
-\end{align}
+% \begin{align}
+%   \frac{\partial \bold{L}}{\partial \bold{X}_{11}} &= \bold{L}_{11}\times \bold{F}_{11} \\
+%   \frac{\partial \bold{L}}{\partial \bold{X}_{12}} &= \bold{L}_{11}\times \bold{F}_{12} +  \bold{L}_{12}\times \bold{F}_{11}\\
+%   \frac{\partial \bold{L}}{\partial \bold{X}_{13}} &= \bold{L}_{12}\times \bold{F}_{12} +  \bold{L}_{13}\times \bold{F}_{11}\\
+%   \frac{\partial \bold{L}}{\partial \bold{X}_{14}} &= \bold{L}_{13}\times \bold{F}_{12}
+% \end{align}
 
-\begin{align}
-  \frac{\partial \bold{L}}{\partial \bold{X}_{21}} &= \bold{L}_{11}\times \bold{F}_{21} + \bold{L}_{21}\times \bold{F}_{11} \\
-  \frac{\partial \bold{L}}{\partial \bold{X}_{22}} &= \bold{L}_{11}\times \bold{F}_{22} + \bold{L}_{12}\times \bold{F}_{21} + \bold{L}_{21}\times \bold{F_{12}} + \bold{L}_{22}\times \bold{F_{11}}\\
-  \frac{\partial \bold{L}}{\partial \bold{X}_{23}} &= \bold{L}_{12}\times \bold{F}_{22} + \bold{L}_{13}\times \bold{F}_{21} + \bold{L}_{22}\times \bold{F_{12}} + \bold{L}_{23}\times \bold{F_{11}}\\
-  \frac{\partial \bold{L}}{\partial \bold{X}_{24}} &= \bold{L}_{13}\times \bold{F}_{22} + \bold{L}_{23}\times \bold{F}_{12}\\
-\end{align}
+% \begin{align}
+%   \frac{\partial \bold{L}}{\partial \bold{X}_{21}} &= \bold{L}_{11}\times \bold{F}_{21} + \bold{L}_{21}\times \bold{F}_{11} \\
+%   \frac{\partial \bold{L}}{\partial \bold{X}_{22}} &= \bold{L}_{11}\times \bold{F}_{22} + \bold{L}_{12}\times \bold{F}_{21} + \bold{L}_{21}\times \bold{F_{12}} + \bold{L}_{22}\times \bold{F_{11}}\\
+%   \frac{\partial \bold{L}}{\partial \bold{X}_{23}} &= \bold{L}_{12}\times \bold{F}_{22} + \bold{L}_{13}\times \bold{F}_{21} + \bold{L}_{22}\times \bold{F_{12}} + \bold{L}_{23}\times \bold{F_{11}}\\
+%   \frac{\partial \bold{L}}{\partial \bold{X}_{24}} &= \bold{L}_{13}\times \bold{F}_{22} + \bold{L}_{23}\times \bold{F}_{12}\\
+% \end{align}
 
-\begin{align}
-  \frac{\partial \bold{L}}{\partial \bold{X}_{31}} &= \bold{L}_{21}\times \bold{F}_{21} + \bold{L}_{31}\times \bold{F}_{11} \\
-  \frac{\partial \bold{L}}{\partial \bold{X}_{32}} &= \bold{L}_{21}\times \bold{F}_{22} + \bold{L}_{22}\times \bold{F}_{21} + \bold{L}_{31}\times \bold{F_{12}} + \bold{L}_{32}\times \bold{F_{11}}\\
-  \frac{\partial \bold{L}}{\partial \bold{X}_{33}} &= \bold{L}_{22}\times \bold{F}_{22} + \bold{L}_{23}\times \bold{F}_{21} + \bold{L}_{32}\times \bold{F_{12}} + \bold{L}_{33}\times \bold{F_{11}}\\
-  \frac{\partial \bold{L}}{\partial \bold{X}_{34}} &= \bold{L}_{23}\times \bold{F}_{22} + \bold{L}_{33}\times \bold{F}_{12}\\
-\end{align}
+% \begin{align}
+%   \frac{\partial \bold{L}}{\partial \bold{X}_{31}} &= \bold{L}_{21}\times \bold{F}_{21} + \bold{L}_{31}\times \bold{F}_{11} \\
+%   \frac{\partial \bold{L}}{\partial \bold{X}_{32}} &= \bold{L}_{21}\times \bold{F}_{22} + \bold{L}_{22}\times \bold{F}_{21} + \bold{L}_{31}\times \bold{F_{12}} + \bold{L}_{32}\times \bold{F_{11}}\\
+%   \frac{\partial \bold{L}}{\partial \bold{X}_{33}} &= \bold{L}_{22}\times \bold{F}_{22} + \bold{L}_{23}\times \bold{F}_{21} + \bold{L}_{32}\times \bold{F_{12}} + \bold{L}_{33}\times \bold{F_{11}}\\
+%   \frac{\partial \bold{L}}{\partial \bold{X}_{34}} &= \bold{L}_{23}\times \bold{F}_{22} + \bold{L}_{33}\times \bold{F}_{12}\\
+% \end{align}
 
-\begin{align}
-  \frac{\partial \bold{L}}{\partial \bold{X}_{41}} &= \bold{L}_{31}\times \bold{F}_{21} \\
-  \frac{\partial \bold{L}}{\partial \bold{X}_{42}} &= \bold{L}_{31}\times \bold{F}_{22} +  \bold{L}_{32}\times \bold{F}_{21}\\
-  \frac{\partial \bold{L}}{\partial \bold{X}_{43}} &= \bold{L}_{32}\times \bold{F}_{32} +  \bold{L}_{33}\times \bold{F}_{21}\\
-  \frac{\partial \bold{L}}{\partial \bold{X}_{44}} &= \bold{L}_{33}\times \bold{F}_{22}
-\end{align}
+% \begin{align}
+%   \frac{\partial \bold{L}}{\partial \bold{X}_{41}} &= \bold{L}_{31}\times \bold{F}_{21} \\
+%   \frac{\partial \bold{L}}{\partial \bold{X}_{42}} &= \bold{L}_{31}\times \bold{F}_{22} +  \bold{L}_{32}\times \bold{F}_{21}\\
+%   \frac{\partial \bold{L}}{\partial \bold{X}_{43}} &= \bold{L}_{32}\times \bold{F}_{32} +  \bold{L}_{33}\times \bold{F}_{21}\\
+%   \frac{\partial \bold{L}}{\partial \bold{X}_{44}} &= \bold{L}_{33}\times \bold{F}_{22}
+% \end{align}
 
 
 
-\tikzexternaldisable
-%\tikzsetnextfilename{2d_bwd_data}
-\begin{figure}[!h]
-  \centering
-  \begin{tikzpicture}
-    \def\cellUnit{0.8}
-    \coordinate (TL) at (0,0);
-    \drawMatrix{4}{4}{\cellUnit}{X}{1}{1}
-    \coordinate (labelInput) at ($(TL)+(2*\cellUnit, -5*\cellUnit)$);
-    \coordinate (labelOutput) at ($(labelInput)+(6.5*\cellUnit, 0)$);
-    \coordinate (labelFilter) at ($(labelOutput)+(5.5*\cellUnit, 0)$);
+% \tikzexternaldisable
+% %\tikzsetnextfilename{2d_bwd_data}
+% \begin{figure}[!h]
+%   \centering
+%   \begin{tikzpicture}
+%     \def\cellUnit{0.8}
+%     \coordinate (TL) at (0,0);
+%     \drawMatrix{4}{4}{\cellUnit}{X}{1}{1}
+%     \coordinate (labelInput) at ($(TL)+(2*\cellUnit, -5*\cellUnit)$);
+%     \coordinate (labelOutput) at ($(labelInput)+(6.5*\cellUnit, 0)$);
+%     \coordinate (labelFilter) at ($(labelOutput)+(5.5*\cellUnit, 0)$);
 
-    \draw [ultra thick, ->, >=stealth, white] ($(TL)+(4*\cellUnit+.1, -2*\cellUnit)$)
-    -- ++(2*\cellUnit-.2, 0) node [pos=.5, black, scale=1.5] {=};
+%     \draw [ultra thick, ->, >=stealth, white] ($(TL)+(4*\cellUnit+.1, -2*\cellUnit)$)
+%     -- ++(2*\cellUnit-.2, 0) node [pos=.5, black, scale=1.5] {=};
 
     
-    \coordinate (TL) at ($(TL)+(6*\cellUnit,0.5*\cellUnit)$);
+%     \coordinate (TL) at ($(TL)+(6*\cellUnit,0.5*\cellUnit)$);
     
-    \foreach \row [count=\ri from 0] in {1,...,5}{
-      \foreach \col [count=\ci from 0] in {1,...,5}{
-        \coordinate (cellTL) at ($(TL)+(\ci*\unit, -\ri*\unit)$);
-        \draw [thick] (cellTL) rectangle ++(\unit, -\unit)
-        node [pos=.5, scale=\scale] {0};
-      }
-    }
-    \coordinate (TL) at ($(TL)+(\cellUnit, -\cellUnit)$);
-    \drawMatrix{3}{3}{\cellUnit}{O}{1}{1}
+%     \foreach \row [count=\ri from 0] in {1,...,5}{
+%       \foreach \col [count=\ci from 0] in {1,...,5}{
+%         \coordinate (cellTL) at ($(TL)+(\ci*\unit, -\ri*\unit)$);
+%         \draw [thick] (cellTL) rectangle ++(\unit, -\unit)
+%         node [pos=.5, scale=\scale] {0};
+%       }
+%     }
+%     \coordinate (TL) at ($(TL)+(\cellUnit, -\cellUnit)$);
+%     \drawMatrix{3}{3}{\cellUnit}{O}{1}{1}
 
-    %% draw filter
-    \coordinate (TL) at ($(TL)+(6*\cellUnit,-.5*\cellUnit)$);
-    \draw [fill=white, thick] (TL) rectangle ++(\cellUnit, -\cellUnit)
-    node [pos=0.5, black] {$F_{22}$};
-    \coordinate (TL) at ($(TL)+(\cellUnit,0)$);
-    \draw [fill=white, thick] (TL) rectangle ++(\cellUnit, -\cellUnit)
-    node [pos=0.5, black] {$F_{21}$};
-    \coordinate (TL) at ($(TL)+(-\cellUnit,-\cellUnit)$);
-    \draw [fill=white, thick] (TL) rectangle ++(\cellUnit, -\cellUnit)
-    node [pos=0.5, black] {$F_{12}$};
-    \coordinate (TL) at ($(TL)+(\cellUnit,0)$);
-    \draw [fill=white, thick] (TL) rectangle ++(\cellUnit, -\cellUnit)
-    node [pos=0.5, black] {$F_{11}$};
+%     %% draw filter
+%     \coordinate (TL) at ($(TL)+(6*\cellUnit,-.5*\cellUnit)$);
+%     \draw [fill=white, thick] (TL) rectangle ++(\cellUnit, -\cellUnit)
+%     node [pos=0.5, black] {$F_{22}$};
+%     \coordinate (TL) at ($(TL)+(\cellUnit,0)$);
+%     \draw [fill=white, thick] (TL) rectangle ++(\cellUnit, -\cellUnit)
+%     node [pos=0.5, black] {$F_{21}$};
+%     \coordinate (TL) at ($(TL)+(-\cellUnit,-\cellUnit)$);
+%     \draw [fill=white, thick] (TL) rectangle ++(\cellUnit, -\cellUnit)
+%     node [pos=0.5, black] {$F_{12}$};
+%     \coordinate (TL) at ($(TL)+(\cellUnit,0)$);
+%     \draw [fill=white, thick] (TL) rectangle ++(\cellUnit, -\cellUnit)
+%     node [pos=0.5, black] {$F_{11}$};
 
-    \draw [ultra thick, ->, >=stealth, white] ($(TL)+(-\cellUnit-.1, 0)$)
-    -- ++(-2*\cellUnit+.2, 0) node [pos=.5, black] {conv};
+%     \draw [ultra thick, ->, >=stealth, white] ($(TL)+(-\cellUnit-.1, 0)$)
+%     -- ++(-2*\cellUnit+.2, 0) node [pos=.5, black] {conv};
 
-    %% labels
-    \node [scale=1.5] at (labelInput) {Input};
-    \node [scale=1.5] at (labelFilter) {Filter};
-    \node [scale=1.5] at (labelOutput) {Output};
-  \end{tikzpicture}
-  \caption{Backward convolution to compute input gradient}
-  \label{fig:bwd_data}
-\end{figure}
-
-
-%\tikzexternaldisable
-\tikzsetnextfilename{2d_fwd_conv_stride_2}
-\begin{figure}[!h]
-  \centering
-  \begin{tikzpicture}
-    \def\cellUnit{0.8}
-    \coordinate (TL) at (0,0);
-    \drawMatrix{4}{4}{\cellUnit}{X}{0}{1}
-
-    \draw [ultra thick, ->, >=stealth, white] ($(TL)+(4*\cellUnit+.1, -2*\cellUnit)$)
-    -- ++(2*\cellUnit-.2, 0) node [pos=.5, black] {conv};
-
-    \coordinate (TL) at ($(TL)+(6*\cellUnit,-\cellUnit)$);
-    \drawMatrix{2}{2}{\cellUnit}{F}{0}{1}
-
-    \draw [ultra thick, ->, >=stealth, white] ($(TL)+(2*\cellUnit+.1, -1*\cellUnit)$)
-    -- ++(2*\cellUnit-.2, 0) node [pos=.5, scale=1.5, black] {=};
-
-    \coordinate (TL) at ($(TL)+(4*\cellUnit,0)$);
-    \drawMatrix{2}{2}{\cellUnit}{O}{0}{1}
-  \end{tikzpicture}
-  \caption{Forward convolution without considering channels. stride = 2}
-  \label{fig:2d_fwd_conv_stride_2}
-\end{figure}
+%     %% labels
+%     \node [scale=1.5] at (labelInput) {Input};
+%     \node [scale=1.5] at (labelFilter) {Filter};
+%     \node [scale=1.5] at (labelOutput) {Output};
+%   \end{tikzpicture}
+%   \caption{Backward convolution to compute input gradient}
+%   \label{fig:bwd_data}
+% \end{figure}
 
 
+% %\tikzexternaldisable
+% \tikzsetnextfilename{2d_fwd_conv_stride_2}
+% \begin{figure}[!h]
+%   \centering
+%   \begin{tikzpicture}
+%     \def\cellUnit{0.8}
+%     \coordinate (TL) at (0,0);
+%     \drawMatrix{4}{4}{\cellUnit}{X}{0}{1}
+
+%     \draw [ultra thick, ->, >=stealth, white] ($(TL)+(4*\cellUnit+.1, -2*\cellUnit)$)
+%     -- ++(2*\cellUnit-.2, 0) node [pos=.5, black] {conv};
+
+%     \coordinate (TL) at ($(TL)+(6*\cellUnit,-\cellUnit)$);
+%     \drawMatrix{2}{2}{\cellUnit}{F}{0}{1}
+
+%     \draw [ultra thick, ->, >=stealth, white] ($(TL)+(2*\cellUnit+.1, -1*\cellUnit)$)
+%     -- ++(2*\cellUnit-.2, 0) node [pos=.5, scale=1.5, black] {=};
+
+%     \coordinate (TL) at ($(TL)+(4*\cellUnit,0)$);
+%     \drawMatrix{2}{2}{\cellUnit}{O}{0}{1}
+%   \end{tikzpicture}
+%   \caption{Forward convolution without considering channels. stride = 2}
+%   \label{fig:2d_fwd_conv_stride_2}
+% \end{figure}
+
+
+\section{Gemm to Gridwise Gemm \emph{rock-gemm-to-gridwise}}
+
+\section{Gridwise Gemm to Blockwise Gemm \emph{rock-gridwise-gemm-to-blockwise}}
+
+\section{Blockwise Gemm to Threadwise Gemm \emph{rock-blockwise-gemm-to-threadwise}}
+
+\subsection{MFMA Instructions}
+
+\section{Threadwise Gemm Lowering \emph{rock-threadwise-gemm-lowering}}
 
 \end{document}
 

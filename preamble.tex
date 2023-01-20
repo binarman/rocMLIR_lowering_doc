@@ -3,7 +3,7 @@
 \usepackage{cite}
 \ifCLASSINFOpdf
 	\usepackage[pdftex]{graphicx}
-	\graphicspath{{../figures/}{../../benchmarks/volkov_diss/}}
+	\graphicspath{{./tikz_figures/}}
 	\DeclareGraphicsExtensions{.pdf,.jpeg,.png, .jpg, .PNG}
 \else
 \fi
@@ -898,13 +898,12 @@
   \node [below, scale=1.5*\scale] (gemmK)  at ($(TL)+(\c*\h*\w*\unit*0.2,-\k*\unit)$)
   {gemmK};
   \draw [->, >=stealth, thick] (gemmK.east) -- ++(0.5*\scale, 0)
-  node [right, scale=1.5*\scale] {\textbf{Merge}[c,y,x]};
+  node [right, scale=1.5*\scale] {\textbf{merge}[c,y,x]};
   %% gemmM
-  %% The following code should be used to generate the gemmM label for filter matrix A
-  %\node [scale=1.5*\scale, rotate=90, above] (gemmM) at ($(TL)+(0,-0.5*\k*\unit)$)
-  %{gemmM};
+  % The following code should be used to generate the gemmM label for filter matrix A
+  %\node [scale=1.5*\scale, rotate=90, above] (gemmM) at ($(TL)+(0,-0.5*\k*\unit)$) {gemmM};
   %\draw [->, >=stealth, thick] (gemmM.north) -- ++(-0.5*\scale,0)
-  %node [above, scale=1.5*\scale, rotate=90] {\textbf{PassThrough}[k]};
+  %node [above, scale=1.5*\scale, rotate=90] {\textbf{passthrough}[k]};
 
   %% y,c dimension info on the matrix
   \foreach \ch [count=\ci from 0] in {1,...,\c}{
@@ -945,7 +944,7 @@
   %% gemmM
   \node [scale=1.5*\scale, rotate=-90, above] (gemmM) at ($(TL)+(\h*\w*\c*\unit, -0.5*\k*\unit)$) {gemmM};
   \draw [->, >=stealth, thick] (gemmM.north) -- ++(0.5*\scale, 0)
-  node [above, scale=1.5*\scale, rotate=-90] {\textbf{PassThrough}[k]};
+  node [above, scale=1.5*\scale, rotate=-90] {\textbf{passthrough}[k]};
 }
 
 \newcommand{\pickElemInMatrix}[3]{
@@ -1201,11 +1200,11 @@
   \node [scale=1.5*\scale, rotate=90, above] (gemmK) at ($(inputGemmreturn)+(0, -0.5*\c*\h*\w*\unit)$)
   {gemmK};
   \draw [->, >=stealth, thick] (gemmK.north) -- ++(-0.5*\scale, 0)
-  node [above, scale=1.5*\scale, rotate=90] {\textbf{Merge}[c, y, x]};
+  node [above, scale=1.5*\scale, rotate=90] {\textbf{merge}[c, y, x]};
   \node [scale=1.5*\scale, below] (gemmN) at ($(inputGemmreturn)+(0.3*\n*\unit, -\c*\h*\w*\unit)$)
   {gemmN};
   \draw [->, >=stealth, thick] (gemmN.east) -- ++(0.5*\scale, 0)
-  node [right, scale=1.5*\scale] {\textbf{Merge}[n, ho, wo]};
+  node [right, scale=1.5*\scale] {\textbf{merge}[n, ho, wo]};
   
   
   %% restore TL
@@ -1274,11 +1273,11 @@
   \node [scale=1.5*\scale, rotate=90, above] (gemmK) at ($(inputGemmreturn)+(0, -0.5*\n*\unit)$)
   {gemmK};
   \draw [->, >=stealth, thick] (gemmK.north) -- ++(-0.5*\scale, 0)
-  node [above, scale=1.5*\scale, rotate=90] {\textbf{Merge}[n, ho, wo]};
+  node [above, scale=1.5*\scale, rotate=90] {\textbf{merge}[n, ho, wo]};
   \node [scale=1.5*\scale, below] (gemmN) at ($(inputGemmreturn)+(0.3*\rows*\unit, -\n*\unit)$)
   {gemmN};
   \draw [->, >=stealth, thick] (gemmN.east) -- ++(0.5*\scale, 0)
-  node [right, scale=1.5*\scale] {\textbf{Merge}[c, y, x]};
+  node [right, scale=1.5*\scale] {\textbf{merge}[c, y, x]};
   
   
   %% restore TL
@@ -1381,12 +1380,12 @@
 
   \node [scale=1.5*\scale, rotate=-90, above] (gemmM) at ($(oGemmreturn)+(\n*\unit, -0.5*\k*\unit)$) {gemmM};
   \draw [->, >=stealth, thick] (gemmM.north) -- ++(0.5*\scale, 0)
-  node [above, scale=1.5*\scale, rotate=-90] {\textbf{PassThrough}[k]};
+  node [above, scale=1.5*\scale, rotate=-90] {\textbf{passthrough}[k]};
 
   \node [below, scale=1.5*\scale] (gemmN)  at ($(oGemmreturn)+(\n*\unit*0.3,-\k*\unit)$)
   {gemmN};
   \draw [->, >=stealth, thick] (gemmN.east) -- ++(0.5*\scale,0)
-  node [right, scale=1.5*\scale] {\textbf{Merge}[n,ho,wo]};
+  node [right, scale=1.5*\scale] {\textbf{merge}[n,ho,wo]};
 
   %% restore TL
   \coordinate (TL) at (oGemmreturn);
@@ -1442,12 +1441,12 @@
 
   \node [scale=1.5*\scale, rotate=90, above] (gemmM) at ($(oGemmreturn)+(0, -0.5*\k*\unit)$) {gemmM};
   \draw [->, >=stealth, thick] (gemmM.north) -- ++(-0.5*\scale, 0)
-  node [above, scale=1.5*\scale, rotate=90] {\textbf{PassThrough}[k]};
+  node [above, scale=1.5*\scale, rotate=90] {\textbf{passthrough}[k]};
 
   \node [below, scale=1.5*\scale] (gemmK)  at ($(oGemmreturn)+(\n*\unit*0.3,-\k*\unit)$)
   {gemmK};
   \draw [->, >=stealth, thick] (gemmK.east) -- ++(0.5*\scale,0)
-  node [right, scale=1.5*\scale] {\textbf{Merge}[n,ho,wo]};
+  node [right, scale=1.5*\scale] {\textbf{merge}[n,ho,wo]};
 
   %% restore TL
   \coordinate (TL) at (oGemmreturn);
