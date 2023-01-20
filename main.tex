@@ -825,10 +825,75 @@ We use the v4r1 algorithm to implement the backward data convolution.
 %   \label{fig:2d_fwd_conv_stride_2}
 % \end{figure}
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% rock-gemm-to-gridwise %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Gemm to Gridwise Gemm \emph{rock-gemm-to-gridwise}}
+Now the tensors are transformed into matrices and the conv2d\_* operator is
+replaced by a gemm operator.
+This pass aims to replace the gemm operator with gridwise\_gemm or gridwise\_gemm\_v2
+operator, i.e.
+\begin{equation}
+\text{gemm(matrixA, matrixB, matrixC)} \rightarrow \text{gridwise\_gemm(matrixA', matrixB', matrixC')}
+\end{equation}
+Before the replacement, the matrices need to be processed into the expected format
+of the gridwise\_gemm operator.
+\subsection{Normalize}
+The dimensions of matrix A, B, and C are expected to be \{G x K x M\}, \{G x K x N\},
+and \{G x M x N\}.
+A matrix is transposed first if its layout does not match the required layout.
+And a new dimension (G) is added to the matrix if it does not have it.
+
+\subsection{Pad}
+We are going to partition matrix A into tiles of size \{kPerBlock x mPerBlock\},
+matrix B into tiles of size  \{kPerBlock, nPerblock\}, and
+the matrix C into tiles of size \{mPerBlock x nPerBlock\}.
+The M dimension needs to be padded if it is not a multiple of mPerBlock.
+The N dimension needs to be padded if it is not a multiple of nPerBlock.
+The K dimension needs to be padded if it is not a multiple of kPerBlock.
+
+Note that [m$|$n$|$k]PerBlock are tuning parameters that should be ready
+before the lowering process starts.
 
 \section{Gridwise Gemm to Blockwise Gemm \emph{rock-gridwise-gemm-to-blockwise}}
+
+
+\tikzexternaldisable
+%\tikzsetnextfilename{tiled_gemm}
+\begin{figure}[!h]
+  \centering
+  \begin{tikzpicture}
+    \def\cellUnitH{0.4}
+    \def\cellUnitW{0.8}
+    \def\m{3}
+    \def\n{6}
+    \def\k{8}
+    %% Matrix A
+    \coordinate (matrixATL) at (0,0);
+    \node [above, scale=1.2] at ($(matrixATL)+(0.5*\m*\cellUnitW,.5)$) {Matrix A};
+    \coordinate (TL) at (matrixATL);
+    \drawTiledMatrix{8}{3}{\cellUnitH}{\cellUnitW}{1}
+    \node [left, scale=1] at ($(matrixATL)+(0, -0.5*\k*\cellUnitH)$) {K};
+    \node [above, scale=1] at ($(matrixATL)+(0.5*\m*\cellUnitW, 0)$) {M};
+
+    %% Matrix B
+    \coordinate (matrixBTL) at ($(matrixATL)+(\m*\cellUnitW+1,0)$);
+    \node [above, scale=1.2] at ($(matrixBTL)+(0.5*\n*\cellUnitW,.5)$) {Matrix B};
+    \coordinate (TL) at (matrixBTL);
+    \drawTiledMatrix{8}{6}{\cellUnitH}{\cellUnitW}{1}
+    \node [above, scale=1] at ($(matrixBTL)+(0.5*\n*\cellUnitW, 0)$) {N};
+    %\node [left, scale=1] at ($(matrixBTL)+(-.2, -0.5*\k*\cellUnitH)$) {K};
+
+    %% Matrix C
+    \coordinate (matrixCTL) at ($(matrixBTL)+(\n*\cellUnitW+1.5,-\cellUnitH)$);
+    \node [above, scale=1.2] at ($(matrixCTL)+(0.5*\n*\cellUnitW,.5)$) {Matrix C};
+    \coordinate (TL) at (matrixCTL);
+    \drawTiledMatrix{3}{6}{\cellUnitW}{\cellUnitW}{1}
+    \node [left, scale=1] at ($(matrixCTL)+(0, -0.5*\m*\cellUnitW)$) {M};
+  \end{tikzpicture}
+  \caption{Forward convolution without considering channels. stride = 2}
+  \label{fig:2d_fwd_conv_stride_2}
+\end{figure}
 
 \section{Blockwise Gemm to Threadwise Gemm \emph{rock-blockwise-gemm-to-threadwise}}
 

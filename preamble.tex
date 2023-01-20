@@ -1477,6 +1477,28 @@
   }
 }
 
+
+\newcommand{\drawTiledMatrix}[5]{
+  %% (TL) predefined point
+  %% #1: height
+  %% #2: width
+  %% #3: unitH
+  %% #4: unitW
+  %% #5: scale
+  \def\h{#1}
+  \def\w{#2}
+  \def\unitH{#3}
+  \def\unitW{#4}
+  \def\scale{#5}
+  \draw [thick] (TL) rectangle ++(\w*\unitW, -\h*\unitH);
+  \foreach \row in {0,...,\h}{
+    \draw [ultra thin] ($(TL)+(0, -\row*\unitH)$) -- ++(\w*\unitW, 0);
+  } 
+  \foreach \col in {0,...,\w}{
+    \draw [ultra thin] ($(TL)+(\col*\unitW, 0)$) -- ++(0, -\h*\unitH);
+  }
+}
+
 %%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "volkov_model"
