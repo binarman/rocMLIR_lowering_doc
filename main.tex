@@ -930,7 +930,7 @@ before the lowering process starts.
     % \def\LDSH{2*\gapW+\gapH+\cellUnitH+\cellUnitW}
     \def\LDSH{2.5}
     \def\LDSW{\k*\cellUnitW+\k*\gapW+\gapW}
-    \def\RFH{1.6}
+    \def\RFH{1.2}
 
     %% LDS
     \coordinate (LDSTL) at ($(globalMEM)+(0, -\GMH-.4)$);
@@ -939,8 +939,11 @@ before the lowering process starts.
     \coordinate (RFTL) at ($(LDSTL)+(0, -\LDSH-\gapH)$);
     
     \node [above right] at ($(RFTL)+(0, -\RFH)$) {registers};
+
+    \node [align=center, inner sep=0, right] (blockwise) at ($(LDSTL)+(\LDSW+.2, 0)$) {blockwise\_gemm op};
     
     \foreach \tile [count=\t from 0] in {1,...,\k}{
+      \pgfmathsetmacro\ratio{\tile*10+10}
       %% tile in A
       \coordinate (tileATL) at ($(matrixATL)+(\mt*\cellUnitW, -\t*\cellUnitH)$);
       \draw [fill=\tileACol] (tileATL) rectangle ++(\cellUnitW, -\cellUnitH)
@@ -951,15 +954,34 @@ before the lowering process starts.
       node [pos=.5] {\t};
       %% acc tile
       \coordinate (tileBLDSTL) at ($(LDSTL)+(\gapW+\t*\cellUnitW+\t*\gapW, -\LDSH+\gapW+\cellUnitH)$);
-      \coordinate (tileCTL) at ($(tileBLDSTL)+(0, -2*\gapH-\cellUnitH)$);
-      \coordinate (tileALDSTL) at ($(tileBLDSTL)+(.5*\cellUnitW-.5*\cellUnitH,\gapH+\cellUnitW)$);
+      \coordinate (tileCTL) at ($(tileBLDSTL)+(.5*\cellUnitW-.5*\cellUnitH, -2*\gapH-\cellUnitH)$);
+      \coordinate (tileALDSTL) at ($(tileBLDSTL)+(0,\cellUnitW)$);
       %% blockwise_gemm op boundary
-      \draw [ultra thin, fill=gray!50!white] ($(tileCTL)+(-.1, -\cellUnitW-.1)$) rectangle ++(.2+\cellUnitW, 3.65);
+      \draw [ultra thin, fill=gray!50!white] ($(tileALDSTL)+(-.1, \cellUnitH)$) rectangle ++(.2+\cellUnitW, -3);
+      \draw [<-, >=stealth] ($(tileALDSTL)+(.5*\cellUnitW, \cellUnitH)$) -- (blockwise.west);
       %% tile C in register
-      \draw [fill=\tileCCol] (tileCTL) rectangle ++(\cellUnitW, -\cellUnitW);
+      \draw [fill=purple!\ratio!white] (tileCTL) rectangle ++(\cellUnitH, -.1);
       %% tile A and tile B in LDS
-      \draw [fill=\tileACol] (tileALDSTL) rectangle ++(\cellUnitH, -\cellUnitW) node [pos=.5] {\t};
+      \draw [fill=\tileACol] (tileALDSTL) rectangle ++(\cellUnitW, -\cellUnitH) node [pos=.5] {\t};
       \draw [fill=\tileBCol] (tileBLDSTL) rectangle ++(\cellUnitW, -\cellUnitH) node [pos=.5] {\t};
+
+      %% mPerBlock/nPerBlock/kPerBlock symbols
+      \ifthenelse{\tile=1}{
+        %% print kPerBlock
+        \draw [decorate, decoration = {calligraphic brace,amplitude=3pt*\scale, mirror}]
+        (tileALDSTL) --  ++(0,-\cellUnitH)
+        node [scale=.7, pos=0.5, left, xshift=-.3em] {kPerBlock};
+        \draw [decorate, decoration = {calligraphic brace,amplitude=3pt*\scale, mirror}]
+        (tileBLDSTL) --  ++(0,-\cellUnitH)
+        node [scale=.7, pos=0.5, left, xshift=-.3em] {kPerBlock};
+        %% mPerBlock and nPerBlock
+        \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt*\scale}]
+        (tileALDSTL) --  ++(\cellUnitW,0)
+        node [scale=.7, pos=0.5, above, yshift=.3em] {mPerBlock};
+        \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt*\scale}]
+        (tileBLDSTL) --  ++(\cellUnitW,0)
+        node [scale=.7, pos=0.5, above, yshift=.3em] {nPerBlock};
+      }
       
       %% symbols
       %\node at ($(tileBLDSTL)+(.5*\cellUnitW, .5*\gapH)$) {$\times$};
@@ -970,21 +992,19 @@ before the lowering process starts.
     \draw [thick, dashed] (LDSTL) rectangle ++(\LDSW, -\LDSH)
     node [pos=0, below right] {LDS};
     %% Register file boundary
-    \draw [thick, dashed] (RFTL) rectangle ++(\LDSW+3*\cellUnitW, -\RFH);
+    \draw [thick, dashed] (RFTL) rectangle ++(\LDSW, -\RFH);
     
     %% accumulate register C tile
-    \coordinate (AccTileCTL) at ($(tileCTL)+(\cellUnitW+2*\cellUnitW, 0)$);
-    \draw [fill=purple] (AccTileCTL) rectangle ++(\cellUnitW, -\cellUnitW);
-    \draw [->, >=stealth] ($(tileCTL)+(\cellUnitW+.2, -.5*\cellUnitW)$) -- ++(2*\cellUnitW-.4, 0)
-    node [above, pos=.5, scale=.7] {accumulate};
+    %\coordinate (AccTileCTL) at ($(tileCTL)+(\cellUnitW+2*\cellUnitW, 0)$);
+    %\draw [fill=purple] (AccTileCTL) rectangle ++(\cellUnitH, -.1);
+    %\draw [->, >=stealth] ($(tileCTL)+(\cellUnitW+.2, -.05)$) -- ++(2*\cellUnitW-.4, 0)
+    %node [below, pos=.5, scale=.7] {accumulate};
 
     %% copy register tile C to matrix C
     \draw [fill=\tileCCol] ($(matrixCTL)+(\nt*\cellUnitW, -\mt*\cellUnitW)$) rectangle ++(\cellUnitW, -\cellUnitW);
-    \draw [->, >=stealth] ($(AccTileCTL)+(\cellUnitW, 0)$) to[out=45, in=-90]
-    ($(matrixCTL)+(\nt*\cellUnitW+.5*\cellUnitW, -\mt*\cellUnitW-\cellUnitW)$);
-
-    \node [align=center, inner sep=0] (blockwise) at ($(tileALDSTL)+(3, 0)$) {blockwise\_gemm op\\arguments};
-    \draw [->, >=stealth] ($(blockwise.south west)+(.3, .3)$) -- ++(-1.1, -.8);
+    \draw [fill=purple] ($(matrixCTL)+(\nt*\cellUnitW+.3, -\mt*\cellUnitW-.2)$) rectangle ++(\cellUnitH, -.1);
+    \draw [->, >=stealth] ($(tileCTL)+(\cellUnitH, 0)$) to[out=45, in=-90]
+    ($(matrixCTL)+(\nt*\cellUnitW+.3+.5*\cellUnitH, -\mt*\cellUnitW-.2-.1)$);
      
   \end{tikzpicture}
   \caption{Gemm computation task for one workgroup (CUDA block).}
