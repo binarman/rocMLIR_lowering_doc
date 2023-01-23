@@ -56,7 +56,7 @@
 \tikzexternalize[prefix=tikz_figures/]%
 \pgfdeclarelayer{bg}    % declare background layer
 \pgfsetlayers{bg,main} % set the order of the layers (main is the standard layer)
-\usetikzlibrary{patterns}
+\usetikzlibrary{patterns, patterns.meta}
 \usetikzlibrary{decorations.pathreplacing,calligraphy}
 
 \renewcommand\thesection{\arabic{section}}
@@ -1497,6 +1497,151 @@
   \foreach \col in {0,...,\w}{
     \draw [ultra thin] ($(TL)+(\col*\unitW, 0)$) -- ++(0, -\h*\unitH);
   }
+}
+
+\newcommand{\gridwiseToBlockwise}{
+  \def\cellUnitH{0.4}
+  \def\cellUnitW{0.8}
+  \def\m{3}
+  \def\n{6}
+  \def\k{8}
+  \def\GMH{4.9}
+  \def\GMW{16.8}
+  \def\tileACol{red!50!white}
+  \def\tileBCol{blue!50!white}
+  \def\tileCCol{purple!70!white}
+
+  %% Global memory boundary
+  \coordinate (globalMEM) at (0,0);
+  \draw [thick, dashed] (globalMEM) rectangle ++(\GMW, -\GMH)
+  node [pos=0, below right] {global memory};
+  
+  %% Matrix A
+  \coordinate (matrixATL) at ($(globalMEM)+(1.3, -1.5)$);
+  \node [above, scale=1.2] at ($(matrixATL)+(0.5*\m*\cellUnitW,.5)$) {Matrix A};
+  \coordinate (TL) at (matrixATL);
+  \drawTiledMatrix{8}{3}{\cellUnitH}{\cellUnitW}{1}
+  %% label K x M
+  \node [left, scale=1] at ($(matrixATL)+(0, -0.5*\k*\cellUnitH)$) {K};
+  \node [above, scale=1] at ($(matrixATL)+(0.5*\m*\cellUnitW, 0)$) {M};
+  %% label mPerBlock x kPerBlock
+  \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt*\scale}]
+  (matrixATL) --  ++(\cellUnitW,0)
+  node [scale=.7, pos=0.5, above, yshift=.3em] {mPerBlock};
+  \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt*\scale, mirror}]
+  (matrixATL) --  ++(0,-\cellUnitH)
+  node [scale=.7, pos=0.5, left, xshift=-.3em] {kPerBlock};
+
+  %% Matrix B
+  \coordinate (matrixBTL) at ($(matrixATL)+(\m*\cellUnitW+1,0)$);
+  \node [above, scale=1.2] at ($(matrixBTL)+(0.5*\n*\cellUnitW,.5)$) {Matrix B};
+  \coordinate (TL) at (matrixBTL);
+  \drawTiledMatrix{8}{6}{\cellUnitH}{\cellUnitW}{1}
+  \node [above, scale=1] at ($(matrixBTL)+(0.5*\n*\cellUnitW, 0)$) {N};
+  \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt*\scale}]
+  (matrixBTL) --  ++(\cellUnitW,0)
+  node [scale=.7, pos=0.5, above, yshift=.3em] {nPerBlock};
+
+  %% Matrix C
+  \coordinate (matrixCTL) at ($(matrixBTL)+(\n*\cellUnitW+2,-\cellUnitH)$);
+  \node [above, scale=1.2] at ($(matrixCTL)+(0.5*\n*\cellUnitW,.5)$) {Matrix C};
+  \coordinate (TL) at (matrixCTL);
+  \drawTiledMatrix{3}{6}{\cellUnitW}{\cellUnitW}{1}
+  %% label M x N
+  \node [left, scale=1] at ($(matrixCTL)+(0, -0.5*\m*\cellUnitW)$) {M};
+  \node [above, scale=1] at ($(matrixCTL)+(0.5*\n*\cellUnitW, 0)$) {N};
+  %% label mPerBlock x nPerBlock
+  \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt*\scale}]
+  (matrixCTL) --  ++(\cellUnitW,0)
+  node [scale=.7, pos=0.5, above, yshift=.3em] {nPerBlock};
+  \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt*\scale, mirror}]
+  (matrixCTL) --  ++(0,-\cellUnitW)
+  node [scale=.7, pos=0.5, left, xshift=-.3em] {mPerBlock};
+
+
+  %% draw a loop of tile matmul
+  \def\mt{1}
+  \def\nt{2}
+  \def\gapH{.5}
+  \def\gapW{.3}
+  % \def\LDSH{2*\gapW+\gapH+\cellUnitH+\cellUnitW}
+  \def\LDSH{2.5}
+  \def\LDSW{\k*\cellUnitW+\k*\gapW+\gapW}
+  \def\RFH{1.2}
+
+  %% LDS
+  \coordinate (LDSTL) at ($(globalMEM)+(0, -\GMH-.4)$);
+
+  %% register
+  \coordinate (RFTL) at ($(LDSTL)+(0, -\LDSH-\gapH)$);
+  
+  \node [above right] at ($(RFTL)+(0, -\RFH)$) {registers};
+
+  \node [align=center, inner sep=0, right] (blockwise) at ($(LDSTL)+(\LDSW+.2, 0)$) {blockwise\_gemm\_v2};
+  
+  \foreach \tile [count=\t from 0] in {1,...,\k}{
+    \pgfmathsetmacro\ratio{\tile*10+10}
+    %% tile in A
+    \coordinate (tileATL) at ($(matrixATL)+(\mt*\cellUnitW, -\t*\cellUnitH)$);
+    \draw [fill=\tileACol] (tileATL) rectangle ++(\cellUnitW, -\cellUnitH)
+    node [pos=.5] {\t};
+    %% tile in B
+    \coordinate (tileBTL) at ($(matrixBTL)+(\nt*\cellUnitW, -\t*\cellUnitH)$);
+    \draw [fill=\tileBCol] (tileBTL) rectangle ++(\cellUnitW, -\cellUnitH)
+    node [pos=.5] {\t};
+    %% acc tile
+    \coordinate (tileBLDSTL) at ($(LDSTL)+(\gapW+\t*\cellUnitW+\t*\gapW, -\LDSH+\gapW+\cellUnitH)$);
+    \coordinate (tileCTL) at ($(tileBLDSTL)+(.5*\cellUnitW-.5*\cellUnitH, -2*\gapH-\cellUnitH)$);
+    \coordinate (tileALDSTL) at ($(tileBLDSTL)+(0,\cellUnitW)$);
+    %% blockwise_gemm op boundary
+    \draw [ultra thin, fill=gray!50!white] ($(tileALDSTL)+(-.1, \cellUnitH)$) rectangle ++(.2+\cellUnitW, -3);
+    \draw [<-, >=stealth] ($(tileALDSTL)+(.5*\cellUnitW, \cellUnitH)$) -- (blockwise.west);
+    %% tile C in register
+    \draw [fill=purple!\ratio!white] (tileCTL) rectangle ++(\cellUnitH, -.1);
+    %% tile A and tile B in LDS
+    \draw [fill=\tileACol] (tileALDSTL) rectangle ++(\cellUnitW, -\cellUnitH) node [pos=.5] {\t};
+    \draw [fill=\tileBCol] (tileBLDSTL) rectangle ++(\cellUnitW, -\cellUnitH) node [pos=.5] {\t};
+
+    %% mPerBlock/nPerBlock/kPerBlock symbols
+    \ifthenelse{\tile=1}{
+      %% print kPerBlock
+      \draw [decorate, decoration = {calligraphic brace,amplitude=3pt*\scale, mirror}]
+      (tileALDSTL) --  ++(0,-\cellUnitH)
+      node [scale=.7, pos=0.5, left, xshift=-.3em] {kPerBlock};
+      \draw [decorate, decoration = {calligraphic brace,amplitude=3pt*\scale, mirror}]
+      (tileBLDSTL) --  ++(0,-\cellUnitH)
+      node [scale=.7, pos=0.5, left, xshift=-.3em] {kPerBlock};
+      %% mPerBlock and nPerBlock
+      \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt*\scale}]
+      (tileALDSTL) --  ++(\cellUnitW,0)
+      node [scale=.7, pos=0.5, above, yshift=.3em] {mPerBlock};
+      \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt*\scale}]
+      (tileBLDSTL) --  ++(\cellUnitW,0)
+      node [scale=.7, pos=0.5, above, yshift=.3em] {nPerBlock};
+    }
+    
+    %% symbols
+    % \node at ($(tileBLDSTL)+(.5*\cellUnitW, .5*\gapH)$) {$\times$};
+    % \node [rotate=90] at ($(tileCTL)+(.5*\cellUnitW, \gapH)$) {$=$};
+  }
+
+  %% LDS boundary
+  \draw [thick, dashed] (LDSTL) rectangle ++(\LDSW, -\LDSH)
+  node [pos=0, below right] {LDS};
+  %% Register file boundary
+  \draw [thick, dashed] (RFTL) rectangle ++(\LDSW, -\RFH);
+  
+  %% accumulate register C tile
+  % \coordinate (AccTileCTL) at ($(tileCTL)+(\cellUnitW+2*\cellUnitW, 0)$);
+  % \draw [fill=purple] (AccTileCTL) rectangle ++(\cellUnitH, -.1);
+  % \draw [->, >=stealth] ($(tileCTL)+(\cellUnitW+.2, -.05)$) -- ++(2*\cellUnitW-.4, 0)
+  % node [below, pos=.5, scale=.7] {accumulate};
+
+  %% copy register tile C to matrix C
+  \draw [fill=\tileCCol] ($(matrixCTL)+(\nt*\cellUnitW, -\mt*\cellUnitW)$) rectangle ++(\cellUnitW, -\cellUnitW);
+  \draw [fill=purple] ($(matrixCTL)+(\nt*\cellUnitW+.3, -\mt*\cellUnitW-.2)$) rectangle ++(\cellUnitH, -.1);
+  \draw [->, >=stealth] ($(tileCTL)+(\cellUnitH, 0)$) to[out=45, in=-90]
+  ($(matrixCTL)+(\nt*\cellUnitW+.3+.5*\cellUnitH, -\mt*\cellUnitW-.2-.1)$);
 }
 
 %%% Local Variables:
