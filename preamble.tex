@@ -1644,6 +1644,169 @@
   ($(matrixCTL)+(\nt*\cellUnitW+.3+.5*\cellUnitH, -\mt*\cellUnitW-.2-.1)$);
 }
 
+\newcommand{\blockwiseToThreadwise}{
+  \def\tileACol{red!50!white}
+  \def\tileBCol{blue!50!white}
+  \def\tileCCol{purple!70!white}
+  \def\unit{.1}
+  \def\nPerBlock{64}
+  \def\mPerBlock{64}
+  \def\kPerBlock{8}
+  \def\gap{.6}
+
+  %% LDS boundary
+  \coordinate (LDSTL) at (0,0);
+  \draw [thick, dashed] (LDSTL) -- ++(2.3*\gap+\kPerBlock*\unit+\nPerBlock*\unit, 0)
+  -- ++(0, -\gap-\kPerBlock*\unit-.3*\gap) -- ++(-\gap-\nPerBlock*\unit,0)
+  -- ++(0, -1*\gap-\mPerBlock*\unit) -- ++(-1.3*\gap-\kPerBlock*\unit,0)
+  -- cycle;
+  \node [below right] at (LDSTL) {LDS};
+
+  %% tile A
+  \coordinate (tileATL) at ($(LDSTL)+(\gap, -2*\gap-\kPerBlock*\unit)$);
+  \draw [fill=\tileACol] (tileATL) rectangle ++(\kPerBlock*\unit, -\mPerBlock*\unit);
+  \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt}]
+  (tileATL) --  ++(\kPerBlock*\unit,0)
+  node [scale=.7, pos=0.5, above, yshift=.3em, xshift=-.7em] {kPerBlock};
+  \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt, mirror}]
+  (tileATL) --  ++(0, -\mPerBlock*\unit)
+  node [scale=.7, pos=0.5, above, xshift=-.3em, rotate=90] {mPerBlock};
+  %% tile B
+  \coordinate (tileBTL) at ($(LDSTL)+(2*\gap+\kPerBlock*\unit, -\gap)$);
+  \draw [fill=\tileBCol] (tileBTL) rectangle ++(\nPerBlock*\unit, -\kPerBlock*\unit);
+  \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt}]
+  (tileBTL) --  ++(\nPerBlock*\unit,0)
+  node [scale=.7, pos=0.5, above, yshift=.3em] {nPerBlock};
+  \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt, mirror}]
+  (tileBTL) --  ++(0, -\kPerBlock*\unit)
+  node [scale=.7, pos=0.5, left, xshift=-.3em] {kPerBlock};
+  %% Tile C
+  \coordinate (tileCTL) at ($(tileBTL)+(0, -\gap-\kPerBlock*\unit)$);
+  \draw [fill=\tileCCol] (tileCTL) rectangle ++(\nPerBlock*\unit, -\mPerBlock*\unit);
+  %% global memory boundary
+  \draw [thick, dashed] ($(tileCTL)+(-\unit, \unit)$) rectangle
+  ++(\unit+\nPerBlock*\unit+2*\gap, -\unit-\mPerBlock*\unit-\gap);
+  \node [rotate=-90, below right] at ($(tileCTL)+(\nPerBlock*\unit+2*\gap,\unit)$) {global memory};
+
+  %% partition tile C into wavefronts
+  \draw [thick] ($(tileCTL)+(0, -.5*\mPerBlock*\unit)$) -- ++(\nPerBlock*\unit, 0);
+  \draw [thick] ($(tileATL)+(0, -.5*\mPerBlock*\unit)$) -- ++(\kPerBlock*\unit, 0);
+  \draw [thick] ($(tileCTL)+(.5*\nPerBlock*\unit, 0)$) -- ++(0, -\mPerBlock*\unit);
+  \draw [thick] ($(tileBTL)+(.5*\nPerBlock*\unit, 0)$) -- ++(0, -\kPerBlock*\unit);
+  \node [scale=1.2] at ($(tileCTL)+(.25*\nPerBlock*\unit, -.25*\mPerBlock*\unit)$) {wavefront0};
+  \node [scale=1.2] at ($(tileCTL)+(.75*\nPerBlock*\unit, -.25*\mPerBlock*\unit)$) {wavefront1};
+  \coordinate (wavefront2) at ($(tileCTL)+(.25*\nPerBlock*\unit, -.75*\mPerBlock*\unit)$);
+  \node [scale=1.2] at (wavefront2) {wavefront2};
+  \coordinate (wavefront3)at ($(tileCTL)+(.75*\nPerBlock*\unit, -.75*\mPerBlock*\unit)$);
+  \node [scale=1.2, gray] at (wavefront3) {wavefront3};
+  \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt, mirror}]
+  ($(tileCTL)+(0, -\mPerBlock*\unit)$) --  ++(.5*\nPerBlock*\unit,0)
+  node [scale=.7, pos=0.5, below, yshift=-.3em] {nPerWave};
+  \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt}]
+  ($(tileCTL)+(\nPerBlock*\unit, 0)$) --  ++(0, -.5*\mPerBlock*\unit)
+  node [scale=.7, pos=0.5, above, xshift=.3em, rotate=-90] {mPerWave};
+
+  %% partition wavefront3 into mRepeats x nRepeats
+  \draw [thick] ($(wavefront3)+(-.25*\nPerBlock*\unit,0)$) -- ++(.5*\nPerBlock*\unit, 0);
+  \draw [thick] ($(tileATL)+(0, -.75*\mPerBlock*\unit)$) -- ++(\kPerBlock*\unit, 0);
+  \draw [thick] ($(wavefront3)+(0, .25*\mPerBlock*\unit)$) -- ++(0, -.5*\mPerBlock*\unit);
+  \draw [thick] ($(tileBTL)+(.75*\nPerBlock*\unit, 0)$) -- ++(0, -\kPerBlock*\unit);
+  \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt, mirror}]
+  ($(tileCTL)+(.75*\nPerBlock*\unit, -\mPerBlock*\unit)$) --  ++(.25*\nPerBlock*\unit,0)
+  node [scale=.7, pos=0.5, below, yshift=-.3em] {nPerMfmaGroup};
+  \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt}]
+  ($(tileCTL)+(\nPerBlock*\unit, -.75*\mPerBlock*\unit)$) --  ++(0, -.25*\mPerBlock*\unit)
+  node [scale=.7, pos=0.5, above, xshift=.3em, rotate=-90] {mPerMfmaGroup};
+  \foreach \x/\y [count=\xdlops from 0] in {-.25/.25, .25/.25, -.25/-.25, .25/-.25}{
+    \node [scale=.9] at ($(wavefront3)+(.5*\x*\nPerBlock*\unit, .5*\y*\mPerBlock*\unit)$) {xdlops\xdlops};
+    \coordinate (regCTL) at ($(wavefront3)+(.5*\x*\nPerBlock*\unit-.125*\nPerBlock*\unit, .5*\y*\mPerBlock*\unit+.125*\mPerBlock*\unit)$);
+    \draw [fill=purple] (regCTL) rectangle ++(.5*\kPerBlock*\unit, -.5*\kPerBlock*\unit)
+    node [scale=.6, pos=.5] {\xdlops};
+  }
+
+  %% mRepeats and nRepeats
+  \node [rotate=-90] (nRepeats) at ($(wavefront3)+(.4*\nPerBlock*\unit, 0)$) {nRepeats};
+  \draw ($(nRepeats.south)+(-.2, .4)$) -- (nRepeats.south) -- ($(nRepeats.south)+(-.2, -.4)$);
+  \node (mRepeats) at ($(wavefront3)+(0,-.4*\mPerBlock*\unit)$) {mRepeats};
+  \draw ($(mRepeats.north)+(-.4, .2)$) -- (mRepeats.north) -- ($(mRepeats.north)+(.4, .2)$);
+
+  %% Registers
+  \pgfmathsetmacro\RFW{7.2*\kPerBlock*\unit}
+  \coordinate (RFTL) at ($(LDSTL)+(-\RFW-.3*\gap, 0)$);
+  %% register file boundary
+  \draw [thick, dashed] (RFTL) rectangle ++(\RFW, -2.3*\gap-\kPerBlock*\unit-\mPerBlock*\unit)
+  node [below right, pos=0] {registers};
+  %% bufferA and bufferB
+  \coordinate (bufferCTL) at ($(RFTL)+(.3*\gap, -2*\gap)$);
+  \coordinate (bufferBTL) at ($(bufferCTL)+(2*\kPerBlock*\unit+.3*\gap, 0)$);
+  \coordinate (bufferATL) at ($(bufferBTL)+(2*\kPerBlock*\unit+.3*\gap, 0)$);
+  %% xdlopsgemv2 boundary
+  % \coordinate (xdlopsgemmv2) at ($(bufferCTL)+(-\unit, \unit)$);
+  % \draw [fill=gray!50!white] (xdlopsgemmv2) rectangle ++(6*\kPerBlock*\unit+.6*\gap+2*\unit, -8.5*\kPerBlock*\unit-2*\unit);
+  \node [scale=.8, above right] (xdlops) at ($(RFTL)+(.7, .5)$) {xdlops\_gemm\_v2};    
+  \draw [->, >=stealth] (xdlops.south) -- (xdlops.south |- RFTL);
+  
+  %% elements in tile A
+  \draw [fill=red] ($(tileATL)+(0, -.5*\mPerBlock*\unit)$) rectangle ++(\kPerBlock*\unit, -\unit);
+  \draw [pattern={Lines[angle=45,distance=1.5pt]}] ($(tileATL)+(0, -.5*\mPerBlock*\unit)$) rectangle ++(\kPerBlock*\unit, -\unit);
+  \draw [fill=red] ($(tileATL)+(0, -.75*\mPerBlock*\unit)$) rectangle ++(\kPerBlock*\unit, -\unit);
+  \draw [pattern={Lines[angle=-45,distance=1.5pt]}] ($(tileATL)+(0, -.75*\mPerBlock*\unit)$) rectangle ++(\kPerBlock*\unit, -\unit);
+  %% elements in buffer A for thread 0
+  \draw [fill=red] (bufferATL) rectangle ++(\kPerBlock*\unit, -\unit);
+  \draw [pattern={Lines[angle=45,distance=1.5pt]}] (bufferATL) rectangle ++(\kPerBlock*\unit, -\unit);
+  \draw [fill=red] ($(bufferATL)+(\kPerBlock*\unit,0)$) rectangle ++(\kPerBlock*\unit, -\unit);
+  \draw [pattern={Lines[angle=-45,distance=1.5pt]}] ($(bufferATL)+(\kPerBlock*\unit,0)$) rectangle ++(\kPerBlock*\unit, -\unit);
+  %% draw data copy
+  \draw [->, >=stealth, gray!50!black] ($(tileATL)+(.5*\kPerBlock*\unit, -.5*\mPerBlock*\unit)$) to[out=90, in=-90] ($(bufferATL)+(.5*\kPerBlock*\unit, -\unit)$);
+  \draw [->, >=stealth, gray!50!black] ($(tileATL)+(0, -.75*\mPerBlock*\unit-.5*\unit)$) to[out=-180, in=-90] ($(bufferATL)+(1.5*\kPerBlock*\unit, -\unit)$);
+
+  %% elements in tile B
+  \draw [fill=blue!70!white] ($(tileBTL)+(.5*\nPerBlock*\unit, 0)$) rectangle ++(\unit, -\kPerBlock*\unit);
+  \draw [pattern={Lines[angle=45,distance=1.5pt]}] ($(tileBTL)+(.5*\nPerBlock*\unit, 0)$) rectangle ++(\unit, -\kPerBlock*\unit);
+  \draw [fill=blue!70!white] ($(tileBTL)+(.75*\nPerBlock*\unit, 0)$) rectangle ++(\unit, -\kPerBlock*\unit);
+  \draw [pattern={Lines[angle=-45,distance=1.5pt]}] ($(tileBTL)+(.75*\nPerBlock*\unit, 0)$) rectangle ++(\unit, -\kPerBlock*\unit);
+
+  %% elements in buffer B for thread 0
+  \node [left, scale=.6] at ($(bufferCTL)+(-.3*\gap, -.5*\unit)$) {workitem 0};
+  % \node [left, scale=.6] at ($(bufferATL)+(0, -.5*\unit)$) {workitem 0};
+  \draw [fill=blue!70!white] (bufferBTL) rectangle ++(\kPerBlock*\unit, -\unit);
+  \draw [pattern={Lines[angle=45,distance=1.5pt]}] (bufferBTL) rectangle ++(\kPerBlock*\unit, -\unit);
+  \draw [fill=blue!70!white] ($(bufferBTL)+(\kPerBlock*\unit,0)$) rectangle ++(\kPerBlock*\unit, -\unit);
+  \draw [pattern={Lines[angle=-45,distance=1.5pt]}] ($(bufferBTL)+(\kPerBlock*\unit,0)$) rectangle ++(\kPerBlock*\unit, -\unit);
+  %% draw data copy
+  \draw [->, >=stealth, gray!50!black] ($(tileBTL)+(.5*\nPerBlock*\unit, -.5*\kPerBlock*\unit)$) to[out=-180, in=90] ($(bufferBTL)+(.5*\kPerBlock*\unit,0)$);
+  \draw [->, >=stealth, gray!50!black] ($(tileBTL)+(.75*\nPerBlock*\unit+.5*\unit, 0)$) to[out=90, in=90] ($(bufferBTL)+(1.5*\kPerBlock*\unit, 0)$);
+
+  %% elements in register C for thread 0
+  \foreach \reg in {0,1,2,3} {
+    \draw [fill=purple] ($(bufferCTL)+(\reg*.5*\kPerBlock*\unit, 0)$) rectangle ++(.5*\kPerBlock*\unit, -.5*\kPerBlock*\unit)
+    node [scale=.7, pos=.5] {\reg};
+  }
+
+  %% elements in buffer A and buffer B for threads 1 ~ 63
+  \foreach \tid [count=\c from 1] in {4,...,63} {
+    \coordinate (dataPerThreadATL) at ($(bufferATL)+(0, -.2-\tid*\unit)$);
+    \coordinate (dataPerThreadBTL) at ($(bufferBTL)+(0, -.2-\tid*\unit)$);
+    \coordinate (dataPerThreadCTL) at ($(bufferCTL)+(0, -.2-\c*\kPerBlock*\unit*.5)$);
+    \draw [draw=gray, pattern={Lines[angle=45,distance=1.5pt]}, pattern color=gray] (dataPerThreadATL) rectangle ++(\kPerBlock*\unit, -\unit);
+    \draw [draw=gray, pattern={Lines[angle=-45,distance=1.5pt]}, pattern color=gray] ($(dataPerThreadATL)+(\kPerBlock*\unit, 0)$) rectangle ++(\kPerBlock*\unit, -\unit);
+    
+    \draw [draw=gray, pattern={Lines[angle=45,distance=1.5pt]}, pattern color=gray] (dataPerThreadBTL) rectangle ++(\kPerBlock*\unit, -\unit);
+    \draw [draw=gray, pattern={Lines[angle=-45,distance=1.5pt]}, pattern color=gray] ($(dataPerThreadBTL)+(\kPerBlock*\unit,0)$) rectangle ++(\kPerBlock*\unit, -\unit);
+    \ifthenelse{\c<16}
+    { \foreach \t in {0,1,2,3} {
+        \draw [draw=gray] ($(dataPerThreadCTL)+(\t*.5*\kPerBlock*\unit, 0)$) rectangle ++(.5*\kPerBlock*\unit, -.5*\kPerBlock*\unit);
+      }
+      \coordinate (dataPerThreadCTLOut) at (dataPerThreadCTL);}{}
+  }
+  
+  \node [left, scale=.6, align=center] at ($(bufferCTL)+(-.3*\gap, -32*\unit)$) {workitem\\1$\sim$63};
+  % \node [left, scale=.6, align=center] at ($(bufferATL)+(0, -32*\unit)$) {workitem\\1$\sim$63};
+  \node [below] at ($(dataPerThreadBTL)+(\kPerBlock*\unit, -.2)$) {buffer B};
+  \node [below] at ($(dataPerThreadATL)+(\kPerBlock*\unit, -.2)$) {buffer A};
+  \node [below] at ($(dataPerThreadCTLOut)+(\kPerBlock*\unit, -.1-.5*\kPerBlock*\unit)$) {buffer C};
+}
+
 %%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "volkov_model"
