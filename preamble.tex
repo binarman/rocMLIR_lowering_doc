@@ -1577,7 +1577,10 @@
   
   \node [above right] at ($(RFTL)+(0, -\RFH)$) {registers};
 
-  \node [align=center, inner sep=0, right] (blockwise) at ($(LDSTL)+(\LDSW+.2, 0)$) {blockwise\_gemm\_v2};
+  \node [align=left, inner sep=0, below right] (blockwise) at ($(matrixCTL |- LDSTL)+(-1, -2.5*\cellUnitW)$)
+  {for ($i$ = 0; $i <$ 8; $i$ ++)\\
+    \;\;\;\;blockwise\_gemm\_v2(tileA$_i$, tileB$_i$, regC)};
+  \draw [->, >=stealth] (blockwise.west) -- ++(-1.6, 0);
   
   \foreach \tile [count=\t from 0] in {1,...,\k}{
     \pgfmathsetmacro\ratio{\tile*10+10}
@@ -1595,7 +1598,7 @@
     \coordinate (tileALDSTL) at ($(tileBLDSTL)+(0,\cellUnitW)$);
     %% blockwise_gemm op boundary
     \draw [ultra thin, fill=gray!50!white] ($(tileALDSTL)+(-.1, \cellUnitH)$) rectangle ++(.2+\cellUnitW, -3);
-    \draw [<-, >=stealth] ($(tileALDSTL)+(.5*\cellUnitW, \cellUnitH)$) -- (blockwise.west);
+    %\draw [<-, >=stealth] ($(tileALDSTL)+(.5*\cellUnitW, \cellUnitH)$) -- (blockwise.west);
     %% tile C in register
     \draw [fill=purple!\ratio!white] (tileCTL) rectangle ++(\cellUnitH, -.1);
     %% tile A and tile B in LDS
@@ -1805,6 +1808,40 @@
   \node [below] at ($(dataPerThreadBTL)+(\kPerBlock*\unit, -.2)$) {buffer B};
   \node [below] at ($(dataPerThreadATL)+(\kPerBlock*\unit, -.2)$) {buffer A};
   \node [below] at ($(dataPerThreadCTLOut)+(\kPerBlock*\unit, -.1-.5*\kPerBlock*\unit)$) {buffer C};
+}
+
+%% Utility functions to draw brace with text label
+%% (braceStart) need to be predefined
+%% #1: the length of the brace
+%% #2: text
+%% #3: text scale
+\newcommand{\drawBraceNorth}[3]{
+  \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt}]
+  (braceStart) --  ++(#1,0) node [scale=#3, pos=0.5, above, yshift=.3em] {#2};
+}
+
+\newcommand{\drawBraceSouth}[3]{
+  \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt, mirror}]
+  (braceStart) --  ++(#1,0) node [scale=#3, pos=0.5, below, yshift=-.3em] {#2};
+}
+
+\newcommand{\drawBraceEast}[3]{
+  \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt}]
+  (braceStart) --  ++(0,-#1) node [scale=#3, pos=0.5, above, xshift=.3em, rotate=-90] {#2};
+}
+
+\newcommand{\drawBraceEastNoRotate}[3]{
+  \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt}]
+  (braceStart) --  ++(0,-#1) node [scale=#3, pos=0.5, right, xshift=.3em] {#2};
+}
+
+\newcommand{\drawBraceWest}[3]{
+  \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt, mirror}]
+  (braceStart) --  ++(0,-#1) node [scale=#3, pos=0.5, above, xshift=-.3em, rotate=90] {#2};
+}
+\newcommand{\drawBraceWestNoRotate}[3]{
+  \draw [thick, decorate, decoration = {calligraphic brace,amplitude=3pt, mirror}]
+  (braceStart) --  ++(0,-#1) node [scale=#3, pos=0.5, left, xshift=-.3em] {#2};
 }
 
 %%% Local Variables:
