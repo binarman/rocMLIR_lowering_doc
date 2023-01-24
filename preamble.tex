@@ -1844,6 +1844,119 @@
   (braceStart) --  ++(0,-#1) node [scale=#3, pos=0.5, left, xshift=-.3em] {#2};
 }
 
+\newcommand{\threadwiseLowering}{
+  \def\tileACol{red!50!white}
+  \def\tileBCol{green!50!white}
+  \def\tileCCol{purple!70!white}
+  \def\unit{.1}
+  \def\nPerBlock{64}
+  \def\mPerBlock{64}
+  \def\kPerBlock{16}
+  \def\kBase{4}
+  \def\nRepeats{2}
+  \def\mRepeats{2}
+  \def\mPerMfmaGroup{64}
+  \def\nPerMfmaGroup{64}
+  \def\gap{.6}
+
+  %% buffer A and buffer B
+  \coordinate (bufferATL) at (0,0);
+  \coordinate (bufferBTL) at ($(bufferATL)+(64*\unit+3*\gap, 0)$);
+  %% buffer A rectangle
+  \draw [fill=\tileACol] (bufferATL) rectangle ++(\mPerMfmaGroup*\unit, -\kPerBlock*\unit*\mRepeats);
+  \draw [pattern={Lines[angle=-45,distance=1.5pt]}, pattern color=gray]
+  (bufferATL) rectangle ++(\mPerMfmaGroup*\unit, -\kPerBlock*\unit);
+  \draw [pattern={Lines[angle=45,distance=1.5pt]}, pattern color=gray]
+  ($(bufferATL)+(0, -\kPerBlock*\unit)$) rectangle ++(\mPerMfmaGroup*\unit, -\kPerBlock*\unit);
+  %% buffer B rectangle
+  \draw [fill=\tileBCol] (bufferBTL) rectangle ++(\nPerMfmaGroup*\unit, -\kPerBlock*\unit*\nRepeats);
+  \draw [pattern={Lines[angle=-45,distance=1.5pt]}, pattern color=gray]
+  (bufferBTL) rectangle ++(\nPerMfmaGroup*\unit, -\kPerBlock*\unit);
+  \draw [pattern={Lines[angle=45,distance=1.5pt]}, pattern color=gray]
+  ($(bufferBTL)+(0, -\kPerBlock*\unit)$) rectangle ++(\nPerMfmaGroup*\unit, -\kPerBlock*\unit);
+  \foreach \tid in {0,...,63} {
+    \draw ($(bufferATL)+(\tid*\unit, 0)$) -- ++(0, -\mRepeats*\kPerBlock*\unit);
+    \draw ($(bufferBTL)+(\tid*\unit, 0)$) -- ++(0, -2*\kPerBlock*\unit);
+    \ifthenelse{\tid=0 \OR \tid=63}
+    {\node [rotate=-90, scale=.5, left, xshift=-.3em] at ($(bufferBTL)+(.5*\unit+\tid*\unit, 0)$) {workitem \tid};
+      \node [rotate=-90, scale=.5, left, xshift=-.3em] at ($(bufferATL)+(.5*\unit+\tid*\unit, 0)$) {workitem \tid};}{}
+  }
+  \node [above] at ($(bufferATL)+(.5*\mPerMfmaGroup*\unit, .5*\kPerBlock*\unit)$) {bufferA};
+  \node [above] at ($(bufferBTL)+(.5*\mPerMfmaGroup*\unit, .5*\kPerBlock*\unit)$) {bufferB};
+  %% draw kbase lines
+  \foreach \base in {0,...,7} {
+    \draw ($(bufferATL)+(0, -\base*\kBase*\unit)$) -- +(64*\unit, 0);
+    \draw ($(bufferBTL)+(0, -\base*\kBase*\unit)$) -- +(64*\unit, 0);
+    \ifthenelse{\base=4}
+    %% draw boundary between repeats
+    {\draw [ultra thick] ($(bufferATL)+(0, -\base*\kBase*\unit)$) -- +(64*\unit, 0);
+     \draw [ultra thick] ($(bufferBTL)+(0, -\base*\kBase*\unit)$) -- +(64*\unit, 0);}{}
+  }
+  \coordinate (braceStart) at (bufferATL);
+  \drawBraceWestNoRotate{\kBase*\unit}{k\_base}{.8}
+  \coordinate (braceStart) at (bufferBTL);
+  \drawBraceWestNoRotate{\kBase*\unit}{k\_base}{.8}
+  
+  \coordinate (braceStart) at ($(bufferATL)+(64*\unit,0)$);
+  \drawBraceEast{\kPerBlock*\unit}{kPerBlock}{.8}
+  \coordinate (braceStart) at ($(bufferATL)+(64*\unit,-\kPerBlock*\unit)$);
+  \drawBraceEast{\kPerBlock*\unit}{kPerBlock}{.8}
+  \coordinate (braceStart) at ($(bufferBTL)+(64*\unit, 0)$);
+  \drawBraceEast{\kPerBlock*\unit}{kPerBlock}{.8}
+  \coordinate (braceStart) at ($(bufferBTL)+(64*\unit, -\kPerBlock*\unit)$);
+  \drawBraceEast{\kPerBlock*\unit}{kPerBlock}{.8}
+
+  \coordinate (braceStart) at (bufferATL);
+  \drawBraceNorth{\mPerMfmaGroup*\unit}{mPerMfmaGroup}{.8}
+  \coordinate (braceStart) at (bufferBTL);
+  \drawBraceNorth{\nPerMfmaGroup*\unit}{nPerMfmaGroup}{.8}
+
+  %% mRepeats and nRepeats
+  \node [rotate=90, above] (mRepeats) at ($(bufferATL)+(-1.5*\gap, -\kPerBlock*\unit)$) {mRepeats=2};
+  \draw (mRepeats.south) -- ++(.3, .4);
+  \draw (mRepeats.south) -- ++(.3, -.4);
+  \node [rotate=-90, above] (nRepeats) at ($(bufferBTL)+(64*\unit+1.5*\gap, -\kPerBlock*\unit)$) {nRepeats=2};
+  \draw (nRepeats.south) -- ++(-.3, .4);
+  \draw (nRepeats.south) -- ++(-.3, -.4);
+
+  %% mfma instruction for one k_base
+  \draw [ultra thick] ($(bufferATL)+(0, -\kBase*\unit)$) rectangle ++(64*\unit, -\kBase*\unit);
+  \draw [ultra thick] ($(bufferBTL)+(0, -6*\kBase*\unit)$) rectangle ++(64*\unit, -\kBase*\unit);
+
+  \coordinate (mfmaTL) at ($(bufferATL)+(0, -\mRepeats*\kPerBlock*\unit-\gap)$);
+  \node [below right] at (mfmaTL) {\includegraphics[width=.3\textwidth]{mfma_64x32_blgp=1}};
+  %% connect the matrixA and matrixB for the mfma instruction
+  \draw [->, >=stealth] ($(bufferATL)+(0, -1.5*\kBase*\unit)$) to[out=-135, in=90]
+  ($(mfmaTL)+(.6, -1.15)$);
+  \draw [->, >=stealth] ($(bufferBTL)+(0, -6.5*\kBase*\unit)$) to[out=-135, in=0]
+  ($(mfmaTL)+(5.5, -.9)$);
+  %% matrix C/D layout
+  \coordinate (matrixCDTL) at ($(mfmaTL)+(7,0)$);
+  \node [below right] at (matrixCDTL) {\includegraphics[width=.4\textwidth]{matrix_cd_layout}};
+  %% boundary of buffer C for thread 0
+  \coordinate (bufferCTL) at ($(matrixCDTL)+(1.6, -.8)$);
+
+  \coordinate (mfmaTL2) at ($(bufferATL)+(0, -\mRepeats*\kPerBlock*\unit-\gap-6.5)$);
+  \node [below right] at (mfmaTL2) {\includegraphics[width=.3\textwidth]{mfma_64x32_blgp=2}};
+  %% matrix C/D layout
+  \coordinate (matrixCDTL2) at ($(mfmaTL2)+(7,0)$);
+  \node [below right] at (matrixCDTL2) {\includegraphics[width=.4\textwidth]{matrix_cd_layout}};
+
+  \foreach \tid in {0,...,52} {
+    \draw [fill opacity=.2, fill=\tileCCol, draw opacity=.2] ($(bufferCTL)+(\tid*\unit, 0)$) rectangle ++(\unit, -5.43-6.5);
+    \ifthenelse{\tid=0}
+    {\node [rotate=90, scale=.5, left, xshift=-.3em] at ($(bufferCTL)+(.5*\unit+\tid*\unit, -5.4-6.5)$) {workitem \tid};}{}
+    \ifthenelse{\tid=52}
+    {\node [rotate=90, scale=.5, left, xshift=-.3em] at ($(bufferCTL)+(.5*\unit+\tid*\unit, -5.4-6.5)$) {workitem 63};}{}
+    \ifthenelse{\tid=26}
+    {\node [below, yshift=-.3em] at ($(bufferCTL)+(.5*\unit+\tid*\unit, -5.4-6.5)$) {buffer C};}{}
+  }
+
+  %% xdlops1-0 and xdlops1-1
+  \node at ($(mfmaTL)+(4, -3.5)$) {xdlops1-0};
+  \node at ($(mfmaTL2)+(2, -3.5)$) {xdlops1-1};
+}
+
 %%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "volkov_model"
