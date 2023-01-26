@@ -5,3 +5,8 @@ tikz_figures/
 *.log
 main.pdf
 mfma.pdf
+*.nav
+*.out
+*.snm
+*.toc
+presentation/triton-dot.pdf
