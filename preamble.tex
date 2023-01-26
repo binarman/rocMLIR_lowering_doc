@@ -1728,10 +1728,10 @@
   }
 
   %% mRepeats and nRepeats
-  \node [rotate=-90] (nRepeats) at ($(wavefront3)+(.4*\nPerBlock*\unit, 0)$) {nRepeats};
-  \draw ($(nRepeats.south)+(-.2, .4)$) -- (nRepeats.south) -- ($(nRepeats.south)+(-.2, -.4)$);
-  \node (mRepeats) at ($(wavefront3)+(0,-.4*\mPerBlock*\unit)$) {mRepeats};
-  \draw ($(mRepeats.north)+(-.4, .2)$) -- (mRepeats.north) -- ($(mRepeats.north)+(.4, .2)$);
+  \node [rotate=-90] (mRepeats) at ($(wavefront3)+(.4*\nPerBlock*\unit, 0)$) {mRepeats};
+  \draw ($(mRepeats.south)+(-.2, .4)$) -- (mRepeats.south) -- ($(mRepeats.south)+(-.2, -.4)$);
+  \node (nRepeats) at ($(wavefront3)+(0,-.4*\mPerBlock*\unit)$) {nRepeats};
+  \draw ($(nRepeats.north)+(-.4, .2)$) -- (nRepeats.north) -- ($(nRepeats.north)+(.4, .2)$);
 
   %% Registers
   \pgfmathsetmacro\RFW{7.2*\kPerBlock*\unit}
